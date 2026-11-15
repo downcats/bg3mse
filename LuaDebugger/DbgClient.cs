@@ -40,7 +40,13 @@ namespace NSE.DebuggerFrontend
             {
                 try
                 {
+#if NETCOREAPP
+                    // Off Windows .NET refuses SocketFlags.Partial (macOS: "Operation not supported").
+                    // A receive on a stream socket returns what has arrived with or without it.
+                    int received = Socket.Client.Receive(MessageBuffer, BufferPos, MessageBuffer.Length - BufferPos, SocketFlags.None);
+#else
                     int received = Socket.Client.Receive(MessageBuffer, BufferPos, MessageBuffer.Length - BufferPos, SocketFlags.Partial);
+#endif
                     BufferPos += received;
                 }
                 catch (SocketException e)

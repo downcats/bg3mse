@@ -280,7 +280,11 @@ namespace NSE.DebuggerFrontend
                     else
                     {
                         stkFrame.Source = Path.GetFileName(frame.Source);
+#if NETCOREAPP
+                        stkFrame.Path = frame.Path.Replace('/', Path.DirectorySeparatorChar);
+#else
                         stkFrame.Path = frame.Path.Replace("/", "\\");
+#endif
                     }
                     stkFrame.Line = frame.Line;
                     stkFrame.ScopeFirstLine = frame.ScopeFirstLine;
@@ -621,7 +625,11 @@ namespace NSE.DebuggerFrontend
                     dapFrame.source = new DAPSource
                     {
                         name = frame.Source,
+#if NETCOREAPP
+                        path = frame.Path?.Replace('/', Path.DirectorySeparatorChar) ?? frame.Source
+#else
                         path = frame.Path?.Replace("/", "\\") ?? frame.Source
+#endif
                     };
                     dapFrame.line = frame.Line;
                     dapFrame.column = (frame.Line > 0) ? 1 : 0;
@@ -650,7 +658,11 @@ namespace NSE.DebuggerFrontend
                 scope.source = new DAPSource
                 {
                     name = frame.Source,
+#if NETCOREAPP
+                    path = frame.Path?.Replace('/', Path.DirectorySeparatorChar) ?? frame.Source
+#else
                     path = frame.Path?.Replace("/", "\\") ?? frame.Source
+#endif
                 };
                 scope.line = frame.ScopeFirstLine;
                 scope.column = 1;
@@ -804,7 +816,11 @@ namespace NSE.DebuggerFrontend
             {
                 sources = SourceFiles.Select(source => new DAPSource
                 {
+#if NETCOREAPP
+                    path = (source.Path.Length > 0) ? source.Path.Replace('/', Path.DirectorySeparatorChar) : source.Name,
+#else
                     path = (source.Path.Length > 0) ? source.Path.Replace("/", "\\") : source.Name,
+#endif
                     name = (source.Name.Length > 0) ? source.Name : ""
                 }).ToList()
             };

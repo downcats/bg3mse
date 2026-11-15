@@ -18,7 +18,11 @@ namespace NSE.DebuggerFrontend
 
             try
             {
+#if NETCOREAPP
+                logFile = new FileStream(Path.Combine(currentPath, "DAP.log"), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+#else
                 logFile = new FileStream(currentPath + "\\DAP.log", FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+#endif
                 dap.EnableLogging(logFile);
 
                 var dapHandler = new DAPMessageHandler(dap);

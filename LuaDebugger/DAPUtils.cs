@@ -150,6 +150,8 @@ namespace NSE.DebuggerFrontend
                     case "pause": return serializer.Deserialize<DAPContinueRequest>(reader);
                     case "evaluate": return serializer.Deserialize<DAPEvaulateRequest>(reader);
                     case "source": return serializer.Deserialize<DAPSourceRequest>(reader);
+                    case "modules": return serializer.Deserialize<DAPModulesRequest>(reader);
+                    case "loadedSources": return serializer.Deserialize<DAPLoadedSourcesRequest>(reader);
                     default: throw new DAPUnknownMessageException(TypeHint.type, TypeHint.message, TypeHint.seq);
                 }
             }

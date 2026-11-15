@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -143,6 +144,9 @@ namespace NSE.DebuggerFrontend
             }
         }
 
+        // Called from the thread that reads requests and from the one that reads
+        // the backend: each message is numbered and written whole.
+        [MethodImpl(MethodImplOptions.Synchronized)]
         public void Send(DAPMessage message)
         {
             message.seq = OutgoingSeq++;
@@ -158,7 +162,7 @@ namespace NSE.DebuggerFrontend
                 }
             }
 
-            Console.Write($"Content-Length: {encoded.Length}\r\n\r\n");
+            Console.Write($"Content-Length: {Console.OutputEncoding.GetByteCount(encoded)}\r\n\r\n");
             Console.Write(encoded);
         }
 
