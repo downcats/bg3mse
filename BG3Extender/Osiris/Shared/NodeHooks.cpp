@@ -2,9 +2,13 @@
 #include <Osiris/Shared/NodeHooks.h>
 #include <Osiris/Debugger/Debugger.h>
 #include <Lua/Osiris/CallbackManager.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/OsirisLibrary.h>
+#endif
 
 namespace bg3se
 {
+#if defined(_MSC_VER)
     template <typename T>
     class ROWriteAnchor
     {
@@ -26,12 +30,46 @@ namespace bg3se
         T * region_;
         DWORD oldProtect_;
     };
+#else
+    // The macOS library's vtables end after the last function of their class
+    // and lie in read-only data: a vtable is never copied or written whole.
+    // The slots a class has wrapped are kept and replaced one by one
+    // (Mac/Binding/OsirisLibrary.h).
+    static unsigned WrappedSlots(NodeVMT * vmt, NodeVMT * original, NodeWrapOptions const & options, mac::binding::VtableSlotWrap slots[6])
+    {
+        unsigned count = 0;
+        auto add = [&](bool wrap, void * slot, void * replacement, void * kept) {
+            if (wrap) {
+                slots[count++] = { (void **)slot, replacement, (void **)kept };
+            }
+        };
+
+        add(options.WrapIsValid, &vmt->IsValid, (void *)&NodeVMTWrapper::s_WrappedIsValid, &original->IsValid);
+        add(options.WrapPushDownTuple, &vmt->PushDownTuple, (void *)&NodeVMTWrapper::s_WrappedPushDownTuple, &original->PushDownTuple);
+        add(options.WrapPushDownTupleDelete, &vmt->PushDownTupleDelete, (void *)&NodeVMTWrapper::s_WrappedPushDownTupleDelete, &original->PushDownTupleDelete);
+        add(options.WrapInsertTuple, &vmt->InsertTuple, (void *)&NodeVMTWrapper::s_WrappedInsertTuple, &original->InsertTuple);
+        add(options.WrapDeleteTuple, &vmt->DeleteTuple, (void *)&NodeVMTWrapper::s_WrappedDeleteTuple, &original->DeleteTuple);
+        add(options.WrapCallQuery, &vmt->CallQuery, (void *)&NodeVMTWrapper::s_WrappedCallQuery, &original->CallQuery);
+        return count;
+    }
+#endif
 
     NodeVMTWrappers * gNodeVMTWrappers{ nullptr };
 
     NodeVMTWrapper::NodeVMTWrapper(NodeVMT * vmt, NodeWrapOptions & options)
         : vmt_(vmt), options_(options)
     {
+#if !defined(_MSC_VER)
+        // When a slot cannot be stored the class keeps all of its functions,
+        // and its hooks do not run.
+        originalVmt_ = NodeVMT{};
+        mac::binding::VtableSlotWrap slots[6];
+        auto count = WrappedSlots(vmt_, &originalVmt_, options_, slots);
+        auto problem = mac::binding::WrapVtableSlots({ slots, count });
+        if (!problem.empty()) {
+            ERR("NodeVMTWrapper: a story node class is not hooked: %s", problem.c_str());
+        }
+#else
         originalVmt_ = *vmt_;
 
         ROWriteAnchor<NodeVMT> _(vmt_);
@@ -58,12 +96,22 @@ namespace bg3se
         if (options_.WrapCallQuery) {
             vmt_->CallQuery = &s_WrappedCallQuery;
         }
+#endif
     }
 
     NodeVMTWrapper::~NodeVMTWrapper()
     {
+#if !defined(_MSC_VER)
+        mac::binding::VtableSlotWrap slots[6];
+        auto count = WrappedSlots(vmt_, &originalVmt_, options_, slots);
+        auto problem = mac::binding::UnwrapVtableSlots({ slots, count });
+        if (!problem.empty()) {
+            ERR("NodeVMTWrapper: a story node class stays hooked: %s", problem.c_str());
+        }
+#else
         ROWriteAnchor<NodeVMT> _(vmt_);
         *vmt_ = originalVmt_;
+#endif
     }
 
     bool NodeVMTWrapper::WrappedIsValid(Node * node, SmallTuple * tuple, uint32_t adapter)

@@ -122,9 +122,11 @@ void OsirisExtender::RestartLogging(std::wstring const & Type)
         }
     }
 
-    wrappers_.CloseLogFile.CallOriginal(dynamicGlobals_.OsirisObject);
+    if (wrappers_.CloseLogFile.IsWrapped()) {
+        wrappers_.CloseLogFile.CallOriginal(dynamicGlobals_.OsirisObject);
+    }
 
-    if (!logFilename_.empty()) {
+    if (!logFilename_.empty() && wrappers_.OpenLogFile.IsWrapped()) {
         *wrappers_.Globals.DebugFlags = NewFlags;
         wrappers_.OpenLogFile.CallOriginal(dynamicGlobals_.OsirisObject, logFilename_.c_str(), std::iostream::app);
     }
@@ -232,7 +234,9 @@ bool OsirisExtender::CompileWrapper(bool (* next)(void *, wchar_t const *, wchar
 
     if (config_.LogCompile || config_.LogFailedCompile) {
         *wrappers_.Globals.DebugFlags = OriginalFlags;
-        wrappers_.CloseLogFile.CallOriginal(dynamicGlobals_.OsirisObject);
+        if (wrappers_.CloseLogFile.IsWrapped()) {
+            wrappers_.CloseLogFile.CallOriginal(dynamicGlobals_.OsirisObject);
+        }
 
         if (ret) {
             if (config_.LogCompile) {

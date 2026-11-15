@@ -443,7 +443,11 @@ void CustomFunctionManager::PreProcessStory(wchar_t const * path)
     STDString postProcessed;
 
     {
+#if defined(_MSC_VER)
         std::ifstream f(path, std::ios::in | std::ios::binary);
+#else
+        std::ifstream f(std::filesystem::path(path), std::ios::in | std::ios::binary);
+#endif
         if (!f.good()) return;
 
         f.seekg(0, std::ios::end);
@@ -467,7 +471,11 @@ void CustomFunctionManager::PreProcessStory(wchar_t const * path)
     }
 
     {
+#if defined(_MSC_VER)
         std::ofstream f(path, std::ios::out | std::ios::binary);
+#else
+        std::ofstream f(std::filesystem::path(path), std::ios::out | std::ios::binary);
+#endif
         if (!f.good()) return;
 
         f.write(postProcessed.data(), postProcessed.size());
@@ -517,7 +525,9 @@ void CustomFunctionInjector::ThrowEvent(FunctionHandle handle, OsiArgumentDesc *
     auto it = divToOsiMappings_.find(handle);
     if (it != divToOsiMappings_.end()) {
         CustomEventGuard guard;
-        if (guard.CanThrowEvent()) {
+        if (!wrappers_.Event.IsWrapped()) {
+            OsiErrorS("Cannot throw Osiris event: the Event function of the story library was not found");
+        } else if (guard.CanThrowEvent()) {
             auto osiris = gExtender->GetServer().Osiris().GetDynamicGlobals().OsirisObject;
             wrappers_.Event.CallOriginal(osiris, it->second, args);
         } else {
@@ -681,7 +691,11 @@ void CustomFunctionInjector::ExtendStoryHeader(std::wstring const & headerPath)
 #endif
 
     auto headers = functions_.GenerateHeaders();
+#if defined(_MSC_VER)
     std::ofstream wf(headerPath.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+#else
+    std::ofstream wf(std::filesystem::path(headerPath.c_str()), std::ios::out | std::ios::binary | std::ios::app);
+#endif
     wf.write(headers.data(), headers.size());
     wf.close();
 
@@ -698,7 +712,11 @@ void CustomFunctionInjector::AddJunkToStory(std::wstring const& storyPath)
 {
     extendingStory_ = true;
 
+#if defined(_MSC_VER)
     std::ofstream wf(storyPath.c_str(), std::ios::out | std::ios::binary | std::ios::app);
+#else
+    std::ofstream wf(std::filesystem::path(storyPath.c_str()), std::ios::out | std::ios::binary | std::ios::app);
+#endif
     wf.write("\r\nJUNK JUNK JUNK JUNK JUNK\r\n", 28);
     wf.close();
 
