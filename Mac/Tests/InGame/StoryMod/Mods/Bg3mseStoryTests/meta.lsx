@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<save>
+  <version major="4" minor="8" revision="0" build="500" />
+  <region id="Config">
+    <node id="root">
+      <children>
+        <node id="Conflicts" />
+        <node id="Dependencies" />
+        <node id="ModuleInfo">
+          <attribute id="Author" type="LSString" value="bg3mse" />
+          <attribute id="CharacterCreationLevelName" type="FixedString" value="" />
+          <attribute id="Description" type="LSString" value="A goal of its own that calls the Script Extender's Lua and back, and Lua cases that check it. Needs ExtendStory; for a throwaway new game only. Runs only when its trigger file asks for it." />
+          <attribute id="Folder" type="LSString" value="Bg3mseStoryTests" />
+          <attribute id="LobbyLevelName" type="FixedString" value="" />
+          <attribute id="MD5" type="LSString" value="" />
+          <attribute id="MenuLevelName" type="FixedString" value="" />
+          <attribute id="Name" type="LSString" value="bg3mse story tests" />
+          <attribute id="NumPlayers" type="uint8" value="4" />
+          <attribute id="PhotoBooth" type="FixedString" value="" />
+          <attribute id="Type" type="FixedString" value="Add-on" />
+          <attribute id="Tags" type="LSString" value="" />
+          <attribute id="StartupLevelName" type="FixedString" value="" />
+          <attribute id="UUID" type="FixedString" value="5a2aab3d-7758-42d4-8f95-0dc5181e75f8" />
+          <attribute id="Version64" type="int64" value="36028797018963968" />
+          <children>
+            <node id="PublishVersion">
+              <attribute id="Version64" type="int64" value="36028797018963968" />
+            </node>
+            <node id="Scripts" />
+          </children>
+        </node>
+      </children>
+    </node>
+  </region>
+</save>

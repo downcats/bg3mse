@@ -1,0 +1,82 @@
+Version 1
+SubGoalCombiner SGC_AND
+INITSECTION
+DB_Bg3mseStory_Init(1);
+// [BEGIN_NO_EXTENDER]
+DB_Bg3mseStory_WithoutExtender(1);
+// [END_NO_EXTENDER]
+KBSECTION
+// bg3mse story tests. Lua inserts into DB_Bg3mseStory_Ping; this rule
+// answers into DB_Bg3mseStory_Pong and, with the extender, calls Lua back.
+IF
+DB_Bg3mseStory_Ping((STRING)_Value)
+THEN
+DB_Bg3mseStory_Pong(_Value);
+/* [EXTENDER_ONLY]
+NRD_LuaCall("Bg3mseStoryTests", "OnPing", _Value);
+*/
+
+// The story asks Lua: a query with an answer and one without.
+/* [EXTENDER_ONLY]
+IF
+DB_Bg3mseStory_Ask((STRING)_Value)
+AND
+NRD_LuaQuery1("Bg3mseStoryTests", "Answer", _Value, _Answer)
+THEN
+DB_Bg3mseStory_Answer(_Value, _Answer);
+
+IF
+DB_Bg3mseStory_Check((STRING)_Value)
+AND
+NRD_LuaQuery1("Bg3mseStoryTests", "IsYes", _Value)
+THEN
+DB_Bg3mseStory_Checked(_Value);
+*/
+
+// A game event: the timer Lua launches.
+IF
+TimerFinished("Bg3mseStoryTimer")
+THEN
+DB_Bg3mseStory_TimerSeen(1);
+/* [EXTENDER_ONLY]
+NRD_LuaCall("Bg3mseStoryTests", "OnTimer", "Bg3mseStoryTimer");
+*/
+
+// A procedure and a query of this goal's own, which Lua calls.
+PROC
+PROC_Bg3mseStory_Proc((STRING)_Value)
+THEN
+DB_Bg3mseStory_ProcRan(_Value);
+
+QRY
+QRY_Bg3mseStory_IsInit((INTEGER)_Value)
+AND
+DB_Bg3mseStory_Init(_Value)
+THEN
+DB_Bg3mseStory_QueryRan(_Value);
+
+// The story compiler gives a query the node Lua calls it through only where
+// a rule has it as a condition: this rule is there for that.
+IF
+DB_Bg3mseStory_AskInit((INTEGER)_Value)
+AND
+QRY_Bg3mseStory_IsInit(_Value)
+THEN
+DB_Bg3mseStory_InitAsked(_Value);
+
+// A query no rule has as a condition: it has no node, and Lua cannot call it.
+QRY
+QRY_Bg3mseStory_Uncalled((INTEGER)_Value)
+AND
+DB_Bg3mseStory_Init(_Value)
+THEN
+DB_Bg3mseStory_QueryRan(_Value);
+
+// A database only Lua writes, for its listeners.
+IF
+DB_Bg3mseStory_Note((STRING)_Value)
+THEN
+DB_Bg3mseStory_Noted(_Value);
+EXITSECTION
+
+ENDEXITSECTION
