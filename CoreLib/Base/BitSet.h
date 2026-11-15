@@ -130,8 +130,14 @@ struct BitSet
         uint64_t* Buf{ nullptr };
         uint64_t InlineValue;
     };
+#if defined(_MSC_VER)
     uint32_t Capacity{ 64 };
     uint32_t Size{ 0 };
+#else
+    // The macOS game keeps the size before the capacity
+    uint32_t Size{ 0 };
+    uint32_t Capacity{ 64 };
+#endif
 
     inline BitSet() {}
 

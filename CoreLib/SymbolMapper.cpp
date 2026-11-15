@@ -4,6 +4,9 @@
 #include <functional>
 #include <psapi.h>
 #include <DbgHelp.h>
+#if !defined(_MSC_VER)
+#include <Win32Images.h>
+#endif
 #include <CoreLib/tinyxml2.h>
 
 #undef DEBUG_MAPPINGS
@@ -1079,6 +1082,7 @@ bool SymbolMapper::AddModule(std::string const& name, std::wstring const& modNam
     modInfo.ModuleTextStart = modInfo.ModuleStart;
     modInfo.ModuleTextSize = modInfo.ModuleSize;
 
+#if defined(_MSC_VER)
     auto pNtHdr = ImageNtHeader(const_cast<uint8_t*>(modInfo.ModuleStart));
     auto pSectionHdr = (IMAGE_SECTION_HEADER*)(pNtHdr + 1);
 
@@ -1089,6 +1093,16 @@ bool SymbolMapper::AddModule(std::string const& name, std::wstring const& modNam
             break;
         }
     }
+#else
+    // A Mach-O image has no PE headers: its code is the __text section of
+    // its __TEXT segment (Mac/Shim/Win32Images.h).
+    uint8_t const* text = nullptr;
+    size_t textSize = 0;
+    if (shim::CodeSection(hLib, text, textSize)) {
+        modInfo.ModuleTextStart = text;
+        modInfo.ModuleTextSize = textSize;
+    }
+#endif
 
     modules_.insert(std::make_pair(name, modInfo));
     return true;

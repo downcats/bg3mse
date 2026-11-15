@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include <CoreLib/Console.h>
 #include <iostream>
+#if !defined(_MSC_VER)
+#include <Mac/Platform/DebugLog.h>
+#endif
 
 BEGIN_SE()
 
@@ -42,6 +45,11 @@ void Console::SetColor(DebugMessageType type)
 
 void Console::LocalPrint(DebugMessageType type, char const* msg)
 {
+#if !defined(_MSC_VER)
+    // Whether or not a console was created, every message is a line of bg3mse's log.
+    mac::LogConsoleMessage(static_cast<int>(type), msg);
+#endif
+
     if (enabled_ && (!inputEnabled_ || !silence_)) {
         SetColor(type);
         OutputDebugStringA(msg);
@@ -87,7 +95,13 @@ void Console::Create()
 {
     if (created_) return;
 
+#if defined(_MSC_VER)
     AllocConsole();
+#else
+    // Outside Windows the console is the terminal the process was started
+    // from, or without one a window of the overlay, when there is one.
+    if (!AllocConsole()) return;
+#endif
 
     if (IsValidCodePage(CP_UTF8)) {
         SetConsoleCP(CP_UTF8);
@@ -99,6 +113,7 @@ void Console::Create()
     // Disable Ctrl+C handling
     SetConsoleCtrlHandler(NULL, TRUE);
 
+#if defined(_MSC_VER)
     CONSOLE_FONT_INFOEX cfi;
     cfi.cbSize = sizeof(cfi);
     GetCurrentConsoleFontEx(hStdout, FALSE, &cfi);
@@ -114,6 +129,8 @@ void Console::Create()
         wcscpy_s(cfi.FaceName, L"Lucida Console");
         SetCurrentConsoleFontEx(hStdout, FALSE, &cfi);
     }
+#endif
+    // Outside Windows the console is a terminal, whose font is its user's.
 
     FILE * outputStream;
     freopen_s(&outputStream, "CONOUT$", "w", stdout);

@@ -14,7 +14,15 @@ struct CompactSet
     using const_iterator = ContiguousConstIterator<T>;
     using difference_type = int32_t;
     using size_type = uint32_t;
+#if defined(_MSC_VER)
     static constexpr unsigned size_offset = (alignof(T) < sizeof(uint64_t) ? sizeof(uint64_t) : alignof(T));
+#else
+    // The macOS game's set is an array made by new[]: for a type with a
+    // destructor the 16 bytes before the first element hold the element's
+    // size and the number of elements, and the block begins there; for a
+    // type without one nothing precedes the elements.
+    static constexpr unsigned size_offset = std::is_trivially_destructible_v<T> ? 0 : 2 * sizeof(uint64_t);
+#endif
 
     T* Buf{ nullptr };
     TSize Capacity{ 0 };
@@ -86,7 +94,14 @@ struct CompactSet
         if (newCapacity > 0) {
             if (StoreSize) {
                 auto newBuf = Allocator::Alloc(newCapacity * sizeof(T) + size_offset);
+#if defined(_MSC_VER)
                 *(uint64_t*)newBuf = newCapacity;
+#else
+                if (size_offset != 0) {
+                    ((uint64_t*)newBuf)[0] = sizeof(T);
+                    ((uint64_t*)newBuf)[1] = newCapacity;
+                }
+#endif
 
                 return (T*)((std::ptrdiff_t)newBuf + size_offset);
             } else {

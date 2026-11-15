@@ -36,7 +36,11 @@ void ConfigGet(Value& node, char const* key, std::wstring& value)
 
 bool ReadConfigFile(std::wstring const& configPath, std::string& configJson)
 {
+#if defined(_MSC_VER)
     std::ifstream f(configPath, std::ios::in | std::ios::binary);
+#else
+    std::ifstream f(std::filesystem::path(configPath), std::ios::in | std::ios::binary);
+#endif
     if (f.good()) {
         f.seekg(0, std::ios::end);
         configJson.resize((unsigned)f.tellg());

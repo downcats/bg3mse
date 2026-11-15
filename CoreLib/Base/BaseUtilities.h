@@ -56,7 +56,16 @@ class ProtectedGameObjectBase {};
 // Base class for game objects that are managed entirely
 // by the game and we cannot create/copy them.
 template <class T>
+#if defined(_MSC_VER)
 class ProtectedGameObject : public ProtectedGameObjectBase
+#else
+// Without the common base. It is empty, and the Itanium ABI does not put two
+// subobjects of one type at one address: a structure that derives from this
+// class and whose first member does too (ecs::EntityHandleGenerator and its
+// array of ThreadState) had that member moved off offset 0, where MSVC and
+// the game have it. Nothing asks for the base.
+class ProtectedGameObject
+#endif
 {
 public:
     ProtectedGameObject(const ProtectedGameObject&) = delete;
@@ -99,6 +108,12 @@ inline constexpr uint64_t Hash(int64_t v)
 {
     return (uint64_t)v;
 }
+
+#if defined(__APPLE__)
+// LP64: unsigned long / long are distinct from the fixed-width 64-bit types.
+inline constexpr uint64_t Hash(unsigned long v) { return Hash((uint64_t)v); }
+inline constexpr uint64_t Hash(long v) { return Hash((int64_t)v); }
+#endif
 
 inline constexpr uint64_t Hash(float v)
 {

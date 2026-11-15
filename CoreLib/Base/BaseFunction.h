@@ -183,7 +183,7 @@ public:
     }
 
 protected:
-    friend FunctionImpl;
+    template <class, class> friend class FunctionImpl;
 
 private:
     FunctionStorage<R(Args...)>* pStorage_;

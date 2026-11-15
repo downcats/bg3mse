@@ -11,6 +11,10 @@ namespace tinyxml2 {
 
 BEGIN_SE()
 
+#if defined(_MSC_VER)
+// Makes code writable for the time a patch is written. Outside MSVC code is
+// never made writable: a patch is written by swapping its page
+// (Mac/Platform/CodeWriter.h, through Mac/Binding/CodePatches.h).
 class WriteAnchor
 {
 public:
@@ -38,6 +42,7 @@ private:
     std::size_t size_;
     DWORD oldProtect_;
 };
+#endif
 
 struct Pattern
 {

@@ -354,7 +354,13 @@ namespace bg3se
             uint64_t field_1180;
             uint64_t _Pad7[7];
             CRITICAL_SECTION CriticalSection;
+#if defined(_MSC_VER)
             uint64_t field_11E8[3];
+#else
+            // The macOS game's lock is 0x14 bytes and has the pool's last
+            // 64 bytes to itself: the pool is 0x1200 bytes there too.
+            uint8_t _Pad8[0x2c];
+#endif
         };
 
         struct MainTable

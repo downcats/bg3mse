@@ -110,6 +110,7 @@ namespace bg3se {
         using FunctionType = R (*)(TObject*, Params...);
         using BaseFunctionType = R (*)(Params...);
         
+#if defined(_MSC_VER)
         static_assert(sizeof(MethodType) == sizeof(FunctionType));
 
         inline static FunctionType ToFunction(MethodType fun)
@@ -121,6 +122,39 @@ namespace bg3se {
         {
             return *reinterpret_cast<MethodType*>(&fun);
         }
+#else
+        // Itanium C++ ABI: a member function pointer is { ptr, adj }. For a
+        // non-virtual function that needs no adjustment of the object pointer,
+        // ptr is the function's address and adj is 0, and the function is
+        // called as one taking the object pointer first. A virtual function
+        // (adj odd on arm64, ptr odd on x86-64) or an adjusted one has no such
+        // address.
+        struct ItaniumMethodPtr
+        {
+            uintptr_t Ptr;
+            ptrdiff_t Adj;
+        };
+        static_assert(sizeof(MethodType) == sizeof(ItaniumMethodPtr));
+
+        inline static FunctionType ToFunction(MethodType fun)
+        {
+            ItaniumMethodPtr p;
+            memcpy(&p, &fun, sizeof(p));
+            if (p.Adj != 0 || (p.Ptr & 1) != 0) {
+                ERR("MethodPtrHelpers::ToFunction(): not a non-virtual function of the object itself");
+                std::terminate();
+            }
+            return reinterpret_cast<FunctionType>(p.Ptr);
+        }
+
+        inline static MethodType ToMethod(FunctionType fun)
+        {
+            ItaniumMethodPtr p{ reinterpret_cast<uintptr_t>(fun), 0 };
+            MethodType method;
+            memcpy(&method, &p, sizeof(method));
+            return method;
+        }
+#endif
     };
 
     template <class Tag, class T>
@@ -373,6 +407,13 @@ namespace bg3se {
             }
         }
 
+#if defined(_MSC_VER)
         static WrappableFunction<Tag, R(Params...)> * gHook;
+#else
+        // Each hook's .cpp defines gHook for its specialization with the MSVC
+        // extension "Type* Type::gHook;", which other compilers reject (it
+        // needs template<>); elsewhere the member is defined here instead.
+        static inline WrappableFunction<Tag, R(Params...)> * gHook{ nullptr };
+#endif
     };
 }

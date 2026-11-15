@@ -61,6 +61,7 @@ std::optional<std::string> GetExeResource(int resourceId)
     return {};
 }
 
+#if defined(_MSC_VER)
 void Debug(DebugMessageType type, _In_z_ _Printf_format_string_ char const* fmt, ...)
 {
     if (gCoreLibPlatformInterface.GlobalConsole) {
@@ -84,6 +85,9 @@ void DebugLocal(DebugMessageType type, _In_z_ _Printf_format_string_ char const*
         gCoreLibPlatformInterface.GlobalConsole->LocalPrint(type, buf);
     }
 }
+#endif
+// Outside MSVC the two are defined by Mac/Platform/DebugLog.cpp: without a
+// console object a message is a line of bg3mse's log instead of being lost.
 
 void TryDebugBreak()
 {
@@ -114,7 +118,11 @@ bool TryCreateDirectory(std::wstring const& path)
 
 bool SaveFile(std::wstring const& path, std::vector<uint8_t> const& body)
 {
+#if defined(_MSC_VER)
     std::ofstream f(path, std::ios::binary | std::ios::out);
+#else
+    std::ofstream f(std::filesystem::path(path), std::ios::binary | std::ios::out);
+#endif
     if (!f.good()) {
         return false;
     }
@@ -125,7 +133,11 @@ bool SaveFile(std::wstring const& path, std::vector<uint8_t> const& body)
 
 bool SaveFile(std::wstring const& path, std::string_view body)
 {
+#if defined(_MSC_VER)
     std::ofstream f(path, std::ios::binary | std::ios::out);
+#else
+    std::ofstream f(std::filesystem::path(path), std::ios::binary | std::ios::out);
+#endif
     if (!f.good()) {
         return false;
     }
@@ -136,7 +148,11 @@ bool SaveFile(std::wstring const& path, std::string_view body)
 
 bool LoadFile(std::wstring const& path, std::vector<uint8_t>& body)
 {
+#if defined(_MSC_VER)
     std::ifstream f(path, std::ios::in | std::ios::binary);
+#else
+    std::ifstream f(std::filesystem::path(path), std::ios::in | std::ios::binary);
+#endif
     if (f.good()) {
         f.seekg(0, std::ios::end);
         auto size = f.tellg();
@@ -152,7 +168,11 @@ bool LoadFile(std::wstring const& path, std::vector<uint8_t>& body)
 
 bool LoadFile(std::wstring const& path, std::string& body)
 {
+#if defined(_MSC_VER)
     std::ifstream f(path, std::ios::in | std::ios::binary);
+#else
+    std::ifstream f(std::filesystem::path(path), std::ios::in | std::ios::binary);
+#endif
     if (f.good()) {
         f.seekg(0, std::ios::end);
         auto size = f.tellg();
@@ -168,6 +188,12 @@ bool LoadFile(std::wstring const& path, std::string& body)
 
 void const* ResolveRealFunctionAddress(void const * ptr)
 {
+#if !defined(_MSC_VER)
+    // What follows reads x64 code: the jump an incrementally linked image
+    // puts in front of a function. Outside MSVC a function's address is the
+    // address of its code.
+    return ptr;
+#else
     auto p = (uint8_t const*)ptr;
 
     // Unconditional jump
@@ -192,6 +218,7 @@ void const* ResolveRealFunctionAddress(void const * ptr)
 
     // Could not find any relocations
     return ptr;
+#endif
 }
 
 END_SE()
