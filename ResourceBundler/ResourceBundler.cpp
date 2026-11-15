@@ -57,7 +57,11 @@ public:
 private:
     struct ResourceInfo
     {
+#if defined(_MSC_VER)
         std::wstring FilesystemPath;
+#else
+        std::filesystem::path FilesystemPath;
+#endif
         std::string BundlePath;
     };
 
