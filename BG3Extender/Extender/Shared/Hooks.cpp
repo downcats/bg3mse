@@ -4,10 +4,15 @@
 #include <Extender/Shared/ExtensionState.h>
 #include <GameDefinitions/Net.h>
 #include <GameDefinitions/Stats/Cache.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/NetMessages.h>
+#endif
 
 BEGIN_SE()
 
+#if defined(_MSC_VER)
 decltype(Hooks::eocnet__ClientConnectMessage__Serialize)* decltype(Hooks::eocnet__ClientConnectMessage__Serialize)::gHook;
+#endif
 
 void Hooks::Startup()
 {
@@ -37,7 +42,16 @@ void Hooks::HookNetworkMessages(net::MessageFactory* factory)
     DetourUpdateThread(GetCurrentThread());
 
     auto clientConnect = factory->MessagePools[(unsigned)NetMessage::NETMSG_CLIENT_CONNECT]->Template;
+#if defined(_MSC_VER)
     eocnet__ClientConnectMessage__Serialize.Wrap((*(net::Message::VMT**)clientConnect)->Serialize);
+#else
+    // The macOS game's vtables begin with two destructors, so the second
+    // slot is not this function: it is taken from the engine table, and only
+    // when this message's vtable holds it (Mac/Binding/NetMessages.h).
+    if (auto serialize = mac::binding::ClientConnectMessageSerialize(clientConnect)) {
+        eocnet__ClientConnectMessage__Serialize.Wrap(serialize);
+    }
+#endif
 
     DetourTransactionCommit();
 

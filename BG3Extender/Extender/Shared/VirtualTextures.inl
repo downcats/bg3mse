@@ -105,6 +105,15 @@ bool MergeGTS(HashMap<STDString, GTSMapping>& relativePaths)
 void VirtualTextureHelpers::Load()
 {
     std::lock_guard _(lock_);
+#if !defined(_MSC_VER)
+    // The resource manager is kept back on a game whose resource manager is
+    // not laid out as this build declares it (Mac/Binding/Layouts.h).
+    if (!GetStaticSymbols().ls__gGlobalResourceManager || !*GetStaticSymbols().ls__gGlobalResourceManager
+        || !GetStaticSymbols().GetCurrentResourceBank()) {
+        WARN("Mods' virtual textures are not loaded: the resource manager is unavailable on this game");
+        return;
+    }
+#endif
 
     MergeModVTs();
     RebuildIfNecessary();

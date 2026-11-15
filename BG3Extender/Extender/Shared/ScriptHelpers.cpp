@@ -6,6 +6,15 @@
 
 namespace bg3se::script {
 
+#if !defined(_MSC_VER)
+// The file an external IO path names: a backslash in it separates folders,
+// as on Windows and in the shim's file calls (Mac/Shim/Win32Files.cpp).
+static std::filesystem::path ExternalIoFile(STDWString path)
+{
+    std::replace(path.begin(), path.end(), L'\\', L'/');
+    return std::filesystem::path(path.c_str());
+}
+#endif
 bool IsSafeRelativePath(StringView path, bool isGlob = false, bool allowEmpty = false)
 {
     if (!allowEmpty && path.empty()) {
@@ -67,7 +76,11 @@ std::optional<STDString> LoadExternalFile(std::string_view path, PathRootType ro
         auto absolutePath = GetPathForExternalIo(path, root);
         if (!absolutePath) return {};
 
+#if defined(_MSC_VER)
         std::ifstream f(absolutePath->c_str(), std::ios::in | std::ios::binary);
+#else
+        std::ifstream f(ExternalIoFile(*absolutePath), std::ios::in | std::ios::binary);
+#endif
         if (f.good()) {
             STDString body;
             f.seekg(0, std::ios::end);
@@ -134,7 +147,11 @@ bool SaveExternalFile(std::string_view path, PathRootType root, StringView conte
 
     if (!CreateParentDirectoryRecursive(*absolutePath)) return false;
 
+#if defined(_MSC_VER)
     std::ofstream f(absolutePath->c_str(), std::ios::out | std::ios::binary | (append ? std::ios::app : 0));
+#else
+    std::ofstream f(ExternalIoFile(*absolutePath), std::ios::out | std::ios::binary | (append ? std::ios::app : 0));
+#endif
     if (!f.good()) {
         OsiError("Could not open file for writing: '" << path << "'");
         return false;

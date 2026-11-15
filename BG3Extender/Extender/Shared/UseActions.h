@@ -16,7 +16,7 @@ private:
     std::vector<IActionData* (*)()> factories_;
     bool mapped_{ false };
 
-    void DiscoverVftables();
+    bool DiscoverVftables();
     void DiscoverVftables(Array<IActionData*> const& actions);
 };
 

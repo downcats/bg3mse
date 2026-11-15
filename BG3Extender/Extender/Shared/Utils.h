@@ -3,10 +3,16 @@
 #include <GameDefinitions/Base/Base.h>
 #include <CoreLib/Utils.h>
 
+#if defined(_MSC_VER)
 namespace std
 {
     class thread;
 }
+#else
+// libc++ declares std::thread in an inline namespace, which a declaration in
+// namespace std itself would make ambiguous.
+#include <thread>
+#endif
 
 BEGIN_SE()
 

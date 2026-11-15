@@ -10,9 +10,15 @@ BEGIN_SE()
 using SDLPollEventProc = int(SDL_Event* event);
 using SDLStartTextInputProc = void();
 
+#if defined(_MSC_VER)
 #define SDL_HOOK(name) enum class SDL##name##HookTag {}; \
     using SDL##name##HookType = WrappableFunction<SDL##name##HookTag, decltype(SDL_##name)>; \
     SDL##name##HookType* SDL##name##HookType::gHook;
+#else
+// gHook is defined in WrappableFunction (CoreLib/Wrappers.h).
+#define SDL_HOOK(name) enum class SDL##name##HookTag {}; \
+    using SDL##name##HookType = WrappableFunction<SDL##name##HookTag, decltype(SDL_##name)>;
+#endif
 
 SDL_HOOK(CreateWindow)
 SDL_HOOK(PollEvent)

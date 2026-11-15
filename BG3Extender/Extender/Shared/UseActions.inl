@@ -52,8 +52,7 @@ UseActionHelpers::UseActionHelpers()
 IActionData* UseActionHelpers::Create(ActionDataType type)
 {
     if (!mapped_) {
-        DiscoverVftables();
-        mapped_ = true;
+        mapped_ = DiscoverVftables();
     }
 
     if ((unsigned)type < vftables_.size() && (unsigned)type < factories_.size() && vftables_[(unsigned)type] != nullptr) {
@@ -65,9 +64,14 @@ IActionData* UseActionHelpers::Create(ActionDataType type)
     }
 }
 
-void UseActionHelpers::DiscoverVftables()
+bool UseActionHelpers::DiscoverVftables()
 {
-    auto const& templates = GetStaticSymbols().GetGlobalTemplateBank()->Templates;
+    auto bank = GetStaticSymbols().GetGlobalTemplateBank();
+    if (!bank) {
+        return false;
+    }
+
+    auto const& templates = bank->Templates;
     for (auto it : templates) {
         auto tmpl = it.Value;
         if (tmpl->GetTemplateType() == GFS.strcharacter) {
@@ -79,6 +83,8 @@ void UseActionHelpers::DiscoverVftables()
             DiscoverVftables(item->OnDestroyActions.Value);
         }
     }
+
+    return true;
 }
 
 void UseActionHelpers::DiscoverVftables(Array<IActionData*> const& actions)

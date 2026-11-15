@@ -94,7 +94,11 @@ STDWString FourCCNode::ReadString(uint32_t tag)
     auto ccVal = val.Node->ValuePtr();
     auto ccSize = val.Node->ValueLength();
     VT_EXPECT(ccSize >= 2);
+#if defined(_MSC_VER)
     return STDWString((wchar_t const*)ccVal, ccSize / 2 - 1);
+#else
+    return mac::WideFromUtf16<STDWString>(ccVal, ccSize / 2 - 1);
+#endif
 }
 
 using GTSParameterBlockDesc = std::variant<GTSUniformParameterBlock, GTSBCParameterBlock>;
@@ -496,7 +500,14 @@ struct FourCCWriter
 
     void Write(uint32_t cc, STDWString val)
     {
+#if defined(_MSC_VER)
         WriteElement(cc, GTSFourCCFormat::String, val.c_str(), (val.size() + 1) * 2);
+#else
+        std::u16string units;
+        VT_EXPECT(mac::AppendUtf16(val, units));
+        units.push_back(0);
+        WriteElement(cc, GTSFourCCFormat::String, units.data(), (uint32_t)(units.size() * 2));
+#endif
     }
 
     void EndNode()

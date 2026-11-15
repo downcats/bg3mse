@@ -96,6 +96,11 @@ void NetworkManager::ExtendNetworking()
 
 net::GameClient* NetworkManager::GetClient() const
 {
+#if !defined(_MSC_VER)
+    // Only on a game whose network session is laid out as declared
+    // (Mac/Binding/NetMessages.h).
+    if (!mac::binding::NetworkSessionConfirmed()) return nullptr;
+#endif
     auto client = GetStaticSymbols().GetEoCClient();
     if (client != nullptr) {
         return client->GameClient;

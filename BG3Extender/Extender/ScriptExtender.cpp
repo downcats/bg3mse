@@ -26,6 +26,9 @@
 #if USE_OPTICK
 #include <optick_server.h>
 #endif
+#if !defined(_MSC_VER)
+#include <Mac/Platform/Process.h>
+#endif
 
 #undef DEBUG_SERVER_CLIENT
 
@@ -35,9 +38,11 @@ namespace bg3se
 void InitCrashReporting();
 void ShutdownCrashReporting();
 
+#if defined(_MSC_VER)
 decltype(ScriptExtender::CoreLibInit)* decltype(ScriptExtender::CoreLibInit)::gHook;
 decltype(ScriptExtender::AppUpdatePaths)* decltype(ScriptExtender::AppUpdatePaths)::gHook;
 decltype(ScriptExtender::AppLoadGraphicSettings)* decltype(ScriptExtender::AppLoadGraphicSettings)::gHook;
+#endif
 
 std::unique_ptr<ScriptExtender> gExtender;
 
@@ -93,14 +98,27 @@ void ScriptExtender::Initialize()
             INFO("Game version v%d.%d.%d.%d OK", gameVersion_.Major, gameVersion_.Minor, gameVersion_.Revision, gameVersion_.Build);
         } else {
             ERR("Game version v%d.%d.%d.%d is not supported, please upgrade!", gameVersion_.Major, gameVersion_.Minor, gameVersion_.Revision, gameVersion_.Build);
+#if defined(_MSC_VER)
             // Hard exit below a certain version as the EoCClient error display UI won't work anymore
             Fail("Script Extender doesn't support game versions below v4.68, please upgrade!");
+#endif
+            // Outside MSVC a game that is not supported is one whose code was
+            // not found as expected: StaticSymbols stays unbound, FindLibraries
+            // reports the failure below, and the game is left to run.
         }
     } else {
         ERR("Failed to retrieve game version info.");
     }
 
+#if defined(_MSC_VER)
     WarnIfOffline();
+#else
+    // macOS: the updater is libbg3mse-loader.dylib, which loads the extender
+    // with dlopen; there is no file name to tell it by.
+    if (!mac::LoadedThroughUpdater(reinterpret_cast<void const*>(&LuaDebugThreadRunner))) {
+        WARN("NOTICE: Script Extender loaded without an updater present; new updates will not be fetched automatically");
+    }
+#endif
 
     DEBUG("ScriptExtender::Initialize: Starting");
     auto initStart = std::chrono::high_resolution_clock::now();
@@ -155,8 +173,8 @@ void ScriptExtender::Initialize()
         try {
             luaDebugInterface_ = std::make_unique<LuaDebugInterface>(config_.LuaDebuggerPort);
             luaDebugMsgHandler_ = std::make_unique<lua::dbg::DebugMessageHandler>(std::ref(*luaDebugInterface_));
-            luaDebuggerThread_ = new std::thread(std::bind(LuaDebugThreadRunner, std::ref(*luaDebugInterface_)));
             luaDebugger_ = std::make_unique<lua::dbg::Debugger>(std::ref(*luaDebugMsgHandler_));
+            luaDebuggerThread_ = new std::thread(std::bind(LuaDebugThreadRunner, std::ref(*luaDebugInterface_)));
             DEBUG("Lua debugger listening on 127.0.0.1:%d; DBG protocol version %d",
                 config_.LuaDebuggerPort, lua::dbg::DebugMessageHandler::ProtocolVersion);
         } catch (std::exception& e) {
@@ -241,7 +259,14 @@ std::wstring ScriptExtender::MakeLogFilePath(std::wstring const & Type, std::wst
     gmtime_s(&tm, &tt);
 
     std::wstringstream ss;
+#if defined(_MSC_VER)
     ss << config_.LogDirectory << L"\\"
+#else
+    // A macOS path is joined with a slash: the game's own file functions,
+    // which the story's log goes through, take a backslash for a character
+    // of the file's name.
+    ss << config_.LogDirectory << L"/"
+#endif
         << Type << L" "
         << std::setfill(L'0')
         << (tm.tm_year + 1900) << L"-"
@@ -497,16 +522,40 @@ void ScriptExtender::HookStateMachineUpdates()
 {
     if (updateHooksAdded_ || Libraries.CriticalInitializationFailed()) return;
 
+#if !defined(_MSC_VER)
+    // The macOS game makes its two event managers after the first call of
+    // this function (PostStartup, before the App exists). Until both are
+    // there nothing is registered and nothing is given up: the call from
+    // OnAppLoadGraphicSettings registers the listeners.
+    {
+        auto const& sym = GetStaticSymbols();
+        if (!sym.ecl__gGameStateEventManager || !*sym.ecl__gGameStateEventManager
+            || !sym.esv__gGameStateEventManager || !*sym.esv__gGameStateEventManager) {
+            return;
+        }
+    }
+#endif
+
     auto clientEvtMgr = GetStaticSymbols().ecl__gGameStateEventManager;
     if (clientEvtMgr && *clientEvtMgr) {
         auto client = GameAlloc<ClientEventManagerHook>();
+#if defined(_MSC_VER)
         (*clientEvtMgr)->Callbacks.push_back(&client->dummy);
+#else
+        // The macOS game calls a listener through the object's own vtable.
+        (*clientEvtMgr)->Callbacks.push_back(client);
+#endif
     }
 
     auto serverEvtMgr = GetStaticSymbols().esv__gGameStateEventManager;
     if (serverEvtMgr && *serverEvtMgr) {
         auto server = GameAlloc<ServerEventManagerHook>();
+#if defined(_MSC_VER)
         (*serverEvtMgr)->Callbacks.push_back(&server->dummy);
+#else
+        // The macOS game calls a listener through the object's own vtable.
+        (*serverEvtMgr)->Callbacks.push_back(server);
+#endif
     }
 
     updateHooksAdded_ = true;

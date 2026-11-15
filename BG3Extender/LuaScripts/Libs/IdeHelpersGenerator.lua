@@ -10,7 +10,7 @@ local _CustomEntries = Ext.Utils.Include(nil, "builtin://Libs/HelpersGenerator/C
 ---@type table<string,{Before:string?, After:string?, Replace:string?}>
 local _CustomTypeEntries = Ext.Utils.Include(nil, "builtin://Libs/HelpersGenerator/CustomTypeEntries.lua")
 
----@type table<string,{ReplaceSignature:string?, ReplaceReturnValue:string?}>
+---@type table<string,{Before:string?, After:string?, Replace:string?, ReplaceReturnValue:string?}>
 
 local _CustomFunctionExtras = Ext.Utils.Include(nil, "builtin://Libs/HelpersGenerator/CustomFunctionExtras.lua")
 
@@ -486,15 +486,9 @@ function Generator:MakeTypeSignature(cls, type, forceExpand, overrides, missingF
         local retval = {}
 
         local clsName = ""
-        local firstParam = 1
         if cls ~= nil then
             clsName = self:MakeTypeSignature(nil, cls)
             table.insert(args, "self:" .. clsName)
-            -- Methods bound to static helpers receive the object as their first C++ parameter; it's already covered by self
-            local selfParam = type.Params[1]
-            if selfParam ~= nil and self:MakeTypeSignature(nil, selfParam) == clsName then
-                firstParam = 2
-            end
         end
 
         missingFuncData = missingFuncData or {}
@@ -502,19 +496,13 @@ function Generator:MakeTypeSignature(cls, type, forceExpand, overrides, missingF
             missingFuncData = _FuncData.Regular[clsName][type.TypeName]
         end
         
-        -- Params/ReturnValues contain nil for types that have no type info (eg. MathParam, std::tuple),
-        -- so iterate by index instead of ipairs() to avoid dropping everything after the first hole
-        if missingFuncData.Params then
+        if _TableIsNullOrEmpty(type.Params) and missingFuncData.Params then
             for i,data in ipairs(missingFuncData.Params) do
                 table.insert(args, data.name .. ":" .. data.arg)
             end
         else
-            for i=firstParam,#type.Params do
-                local arg = type.Params[i]
-                table.insert(args, "a" .. (i - firstParam + 1) .. ":" .. (arg and self:MakeTypeSignature(cls, arg) or "any"))
-            end
-            if type.VarargParams then
-                table.insert(args, "...:any")
+            for i,arg in ipairs(type.Params) do
+                table.insert(args, "a" .. i .. ":" .. self:MakeTypeSignature(cls, arg))
             end
         end
 
@@ -524,13 +512,9 @@ function Generator:MakeTypeSignature(cls, type, forceExpand, overrides, missingF
             for i,arg in ipairs(missingFuncData.Return) do
                 table.insert(retval, arg)
             end
-        elseif type.VarargsReturn then
-            -- UserReturn; the actual return values are only known by the implementation
-            table.insert(retval, "any")
         else
-            for i=1,#type.ReturnValues do
-                local arg = type.ReturnValues[i]
-                table.insert(retval, arg and self:MakeTypeSignature(cls, arg) or "any")
+            for i,arg in ipairs(type.ReturnValues) do
+                table.insert(retval, self:MakeTypeSignature(cls, arg))
             end
         end
 

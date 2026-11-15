@@ -7,8 +7,18 @@
 #include <Extender/Shared/ExtensionState.h>
 #include <Extender/Version.h>
 #include <shlwapi.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/ClientUpdate.h>
+#include <Mac/Overlay/StateGate.h>
+#include <Mac/Release/Version.h>
+#endif
 
+#if defined(_MSC_VER)
 #define STATIC_HOOK(name) decltype(bg3se::ecl::ScriptExtender::name) * decltype(bg3se::ecl::ScriptExtender::name)::gHook;
+#else
+// Defined in WrappableFunction (CoreLib/Wrappers.h).
+#define STATIC_HOOK(name)
+#endif
 STATIC_HOOK(gameStateWorkerStart_)
 STATIC_HOOK(gameStateMachineUpdate_)
 
@@ -91,7 +101,13 @@ void ScriptExtender::Initialize()
     DetourTransactionCommit();
 
     gameStateWorkerStart_.SetWrapper(&ScriptExtender::GameStateWorkerWrapper, this);
+#if defined(_MSC_VER)
     gameStateMachineUpdate_.SetPrePostHook(&ScriptExtender::OnPreUpdate, &ScriptExtender::OnUpdate, this);
+#else
+    // The macOS game has the state machine's update inline in App::Update:
+    // the two handlers run at two places of it (Mac/Binding/ClientUpdate.h).
+    mac::binding::SetClientUpdateHooks(&ScriptExtender::OnPreUpdate, &ScriptExtender::OnUpdate, this);
+#endif
     gExtender->GetEngineHooks().ui__deferred__PredicatesManager__UpdateFromUI.SetPreHook(&ScriptExtender::OnUiPredicatesManagerUpdate, this);
 
     sdl_.EnableHooks();
@@ -288,6 +304,12 @@ void ScriptExtender::OnGameStateChanged(GameState fromState, GameState toState)
 void ScriptExtender::GameStateWorkerWrapper(void (*wrapped)(void*), void* self)
 {
     ContextGuard _(ContextType::Client);
+#if !defined(_MSC_VER)
+    // macOS: once a session, that the hook runs (the persistent binding of
+    // the worker threads would hide it otherwise).
+    static std::once_flag logged;
+    std::call_once(logged, [] { DEBUG("Client game state worker running in the client context"); });
+#endif
     wrapped(self);
 }
 
@@ -364,10 +386,17 @@ void ScriptExtender::ShowVersionNumber()
     RuntimeStringHandle rsh(FixedString("h5b6e4138g2cf0g4d67gb825gee416cf8c54f"));
     auto versionText = GetStaticSymbols().GetTranslatedStringRepository()->GetTranslatedString(rsh);
     if (versionText && !STDString(*versionText).contains("Script Extender")) {
+#if defined(_MSC_VER)
         auto expandedVersion = STDString(*versionText) +
             "\r\nScript Extender v" + STDString(std::to_string(CurrentVersion)) + " loaded, built on " + BuildDate + ".";
+#else
+        auto expandedVersion = STDString(*versionText) + mac::version::MenuVersionLine(CurrentVersion, BuildDate).c_str();
+#endif
         GetStaticSymbols().GetTranslatedStringRepository()->UpdateTranslatedString(rsh, expandedVersion);
     }
+#if !defined(_MSC_VER)
+    if (!versionText) WARN("The game's version text was not found; the main menu won't show bg3mse's version");
+#endif
 }
 
 void ScriptExtender::OnUiPredicatesManagerUpdate(ui::DeferredPredicatesManager*)
@@ -391,7 +420,7 @@ void ScriptExtender::ResetLuaState()
     if (extensionState_ && extensionState_->GetLua()) {
         auto ext = extensionState_.get();
 
-        ext->AddPostResetCallback([&ext]() {
+        ext->AddPostResetCallback([ext]() {
             ext->OnModuleResume();
             auto state = GetStaticSymbols().GetClientState();
             if (state && (state == GameState::Paused || state == GameState::Running)) {
@@ -407,6 +436,10 @@ void ScriptExtender::ResetLuaState()
 void ScriptExtender::ResetExtensionState()
 {
     OPTICK_EVENT();
+#if !defined(_MSC_VER)
+    // The Mac game's main thread fires Lua's input events on this state.
+    auto replacing = mac::overlay::ClientStateGate().Replace();
+#endif
     network_.OnResetExtensionState();
     extensionState_.reset();
     extensionState_ = std::make_unique<ExtensionState>();

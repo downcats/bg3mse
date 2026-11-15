@@ -10,7 +10,12 @@
 
 #include <Extender/Shared/SavegameSerializer.inl>
 
+#if defined(_MSC_VER)
 #define STATIC_HOOK(name) decltype(bg3se::esv::ScriptExtender::name) * decltype(bg3se::esv::ScriptExtender::name)::gHook;
+#else
+// Defined in WrappableFunction (CoreLib/Wrappers.h).
+#define STATIC_HOOK(name)
+#endif
 STATIC_HOOK(gameStateWorkerStart_)
 STATIC_HOOK(gameStateMachineUpdate_)
 
@@ -194,6 +199,12 @@ void ScriptExtender::OnGameStateChanged(GameState fromState, GameState toState)
 void ScriptExtender::GameStateWorkerWrapper(void (* wrapped)(void *), void* self)
 {
     ContextGuard _(ContextType::Server);
+#if !defined(_MSC_VER)
+    // macOS: once a session, that the hook runs (the persistent binding of
+    // the worker threads would hide it otherwise).
+    static std::once_flag logged;
+    std::call_once(logged, [] { DEBUG("Server game state worker running in the server context"); });
+#endif
     wrapped(self);
 }
 

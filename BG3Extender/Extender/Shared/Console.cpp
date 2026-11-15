@@ -221,10 +221,18 @@ void DebugConsole::InputLoop()
         }
 
         std::cout.flush();
+#if defined(_MSC_VER)
         std::getline(std::cin, line);
 
         if (std::cin.fail() || std::cin.eof()) {
             std::cin.clear();
+#else
+        // The line is read as ConsoleThread reads the key that opened the
+        // console. A read of std::cin would stop the process when the game
+        // is a background job of its shell, and after the end-of-file key
+        // every later read of it would end at once.
+        if (!mac::ReadConsoleLine(line)) {
+#endif
             multiLineMode_ = false;
             multiLineCommand_.clear();
             std::cout << std::endl;
@@ -275,6 +283,10 @@ void DebugConsole::UpdateConsoleSize()
 void DebugConsole::Create()
 {
     Console::Create();
+#if !defined(_MSC_VER)
+    // No terminal and no window, no console: nothing is printed and no thread waits for input.
+    if (!created_) return;
+#endif
     EnableOutput(true);
 
     consoleRunning_ = true;

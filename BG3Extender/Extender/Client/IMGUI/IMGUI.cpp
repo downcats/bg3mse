@@ -11,8 +11,13 @@
 
 #define IMGUI_FRAME_DEBUG(msg, ...) if ((frameNo_ % 100) == 0) { IMGUI_DEBUG(msg, __VA_ARGS__); }
 
+#if defined(_MSC_VER)
 #include <Extender/Client/IMGUI/Vulkan.inl>
 #include <Extender/Client/IMGUI/DX11.inl>
+#else
+// The Mac game renders with Metal.
+#include <Mac/Overlay/MetalBackend.h>
+#endif
 #include <Lua/Shared/LuaMethodCallHelpers.h>
 
 BEGIN_NS(extui)
@@ -60,6 +65,13 @@ bool ImageReference::BindTexture(FixedString const& textureUuid)
 
 bool ImageReference::BindIcon(FixedString const& iconName)
 {
+#if !defined(_MSC_VER)
+    // The atlas map is an optional global in the Mac game, and an icon is of
+    // no use where the game's textures cannot be loaded.
+    if (!GameTexturesUsable() || !GetStaticSymbols().ls__gTextureAtlasMap || !*GetStaticSymbols().ls__gTextureAtlasMap) {
+        return false;
+    }
+#endif
     auto atlas = (*GetStaticSymbols().ls__gTextureAtlasMap)->IconMap.get_or_default(iconName);
     if (!atlas) {
         return false;
@@ -1866,11 +1878,15 @@ void IMGUIObjectManager::Clear()
 IMGUIManager::IMGUIManager(SDLManager& sdl)
     : sdl_(sdl)
 {
+#if defined(_MSC_VER)
     if (GetModuleHandleW(L"bg3_dx11.exe") == NULL) {
         renderer_ = std::make_unique<VulkanBackend>(*this);
     } else {
         renderer_ = std::make_unique<DX11Backend>(*this);
     }
+#else
+    renderer_ = std::make_unique<MetalBackend>(*this);
+#endif
 
     textureLoader_.BindRenderer(renderer_.get());
 }
@@ -2193,6 +2209,12 @@ void IMGUIManager::UpdateStyle()
 
 void IMGUIManager::Update()
 {
+#if !defined(_MSC_VER)
+    // The Mac backend learns of the device and of the drawable's size on the
+    // main thread, and acts on them here, on the client thread.
+    static_cast<MetalBackend&>(*renderer_).ClientUpdate();
+#endif
+
     if (!enableUI_
         || !initialized_
         || !objects_
@@ -2287,6 +2309,13 @@ std::optional<TextureLoadResult> IMGUITextureLoader::IncTextureRef(FixedString c
         return refs->LoadResult;
     }
 
+#if !defined(_MSC_VER)
+    // What follows reads the Mac game's resource manager: only where that was checked.
+    if (!GameTexturesUsable()) {
+        return {};
+    }
+#endif
+
     auto tex = (resource::TextureResource*)GetStaticSymbols().GetCurrentResourceBank()->GetResource(ResourceBankType::Texture, textureGuid);
     if (!tex) {
         return {};
@@ -2298,7 +2327,12 @@ std::optional<TextureLoadResult> IMGUITextureLoader::IncTextureRef(FixedString c
         return {};
     }
 
+#if defined(_MSC_VER)
     auto descriptor = (*GetStaticSymbols().ls__AppliedMaterial__LoadTexture)(nullptr, textureGuid);
+#else
+    // The Mac game has that function's code only inlined into its callers.
+    auto descriptor = LoadGameTexture(tex);
+#endif
     if (!descriptor) {
         return {};
     }

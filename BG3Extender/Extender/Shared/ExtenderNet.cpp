@@ -4,6 +4,9 @@
 #pragma warning(disable:4267)
 #include <Extender/Shared/ExtenderProtocol.pb.h>
 #pragma warning(pop)
+#if !defined(_MSC_VER)
+#include <Mac/Binding/NetMessages.h>
+#endif
 
 #include <Extender/Client/ClientNetworking.inl>
 #include <Extender/Server/ServerNetworking.inl>
@@ -64,6 +67,11 @@ Message* MessagePool::GetFreeMessage()
 
 std::optional<UserId> GameServer::GetLocalUserId() const
 {
+#if !defined(_MSC_VER)
+    // Only on a game whose network session is laid out as declared
+    // (Mac/Binding/NetMessages.h).
+    if (!mac::binding::NetworkSessionConfirmed()) return {};
+#endif
     if (!LocalPeerId) return {};
 
     auto peerInfo = PeerInfo.find(LocalPeerId);

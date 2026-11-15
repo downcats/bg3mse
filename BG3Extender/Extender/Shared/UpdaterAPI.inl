@@ -5,7 +5,12 @@ BEGIN_SE()
 
 UpdaterAPIHelpers::UpdaterAPIHelpers()
 {
+#if defined(_MSC_VER)
 	auto dWrite = GetModuleHandleW(L"DWrite.dll");
+#else
+	// macOS: the updater is libbg3mse-loader.dylib (Mac/Updater/Loader.cpp).
+	auto dWrite = GetModuleHandleW(L"libbg3mse-loader.dylib");
+#endif
 	if (dWrite != NULL && dWrite != gCoreLibPlatformInterface.ThisModule) {
 		initialized_ = api_.Init(dWrite);
 	}
