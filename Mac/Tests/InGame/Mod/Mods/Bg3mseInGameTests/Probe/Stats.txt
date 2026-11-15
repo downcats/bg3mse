@@ -1,0 +1,4 @@
+new entry "Bg3mseIgt_LoadedSpell"
+type "SpellData"
+using "Target_MainHandAttack"
+data "Cooldown" "OncePerTurn"
