@@ -1,147 +1,53 @@
-# Credit goes to the TModLoader project team (https://github.com/tModLoader/tModLoader) for the
-# original issue template.
-
-# Note: Links are relative to the issues page.
-
-name: Bug Report
-description: Report a bug with BG3 Script Extender
-labels: ["Type: Bug", "NEW ISSUE"]
+name: Bug report
+description: A mod that doesn't work on the Mac, a crash, or anything that behaves differently from Windows
+labels: ["bug"]
 body:
 - type: markdown
   attributes:
     value: |
-      [Troubleshooting Guide]: ../blob/main/TROUBLESHOOTING.md
-      [Issues]: ../issues
+      For things that work on Windows but not on Mac.
 
-      # Before you create an issue...
+      If it also happens on Windows, report it to [Norbyte](https://github.com/Norbyte/bg3se/issues) or the mod's author instead.
 
-      Note that issues should be created **ONLY** for Script Extender-specific bugs and issues.
-      If you are having trouble with a **specific mod**, please report the issue to that mod's
-      author, not here.
-      
-      For a list of common issues and fixes, see the [Troubleshooting Guide]
-
-      After you have attempted common fixes, please search using the search bar on the [Issues] page
-      to see if an issue already exists for the bug you encountered. If there is, please add to
-      that issue instead of making a new one. You can also react with 👍 to prioritize an issue.
-      
-      Only AFTER you have attempted common fixes and looked for an existing issue should you go
-      ahead and create a new issue.
-
-
-- type: dropdown
+- type: textarea
   attributes:
-    label: I have attempted solutions to common problems
-    description: |
-      [Troubleshooting Guide]: ../blob/main/TROUBLESHOOTING.md
-
-      Have you attempted fixes for common issues, as described in the [Troubleshooting Guide]?
-    
-    multiple: false
-    options:
-      - "Yes"
-      - "No"
+    label: What happened
+    description: What you did, what you expected, and what happened.
   validations:
     required: true
 
-
-- type: dropdown
+- type: input
   attributes:
-    label: I have checked that my game version is supported
-    description: |
-      [README]: ../blob/main/README.md
+    label: Mod
+    description: Which mod, with a link, if it's about one.
 
-      Have you checked that your version of the game is supported by Script Extender
-      (shown above Script Extender's download link in the [README])?
-    
-    multiple: false
-    options:
-      - "Yes"
-      - "No"
+- type: input
+  attributes:
+    label: bg3mse version
+    description: The first line of the log, for example "bg3mse 1.0.0 loaded (commit ...)".
   validations:
     required: true
 
-
-- type: dropdown
+- type: input
   attributes:
-    label: OS
-    description: |
-      What OS are you on?
-
-    multiple: false
-    options:
-      - Windows 10
-      - Windows 11
-      - Mac
-      - Linux
+    label: Game version
+    description: Shown in the corner of the game's main menu, for example 4.1.1.7631656.
   validations:
     required: true
 
-
-- type: dropdown
+- type: input
   attributes:
-    label: Platform
-    description: |
-      What store did you purchase the game from?
-
-    multiple: false
-    options:
-      - Steam
-      - GOG
+    label: Mac
+    description: The model and macOS version, for example "MacBook Pro M3, macOS 15.4".
   validations:
     required: true
 
-
 - type: textarea
   attributes:
-    label: Description
+    label: Log files
     description: |
-      Describe your issue(s) here. What is the issue?
+      Drag these in:
+      - `~/Library/Application Support/bg3mse/logs/latest.log`
+      - after a crash, the newest files in `~/Library/Application Support/bg3mse/Crashes/`
 
-
-- type: textarea
-  attributes:
-    label: Indications
-    description: |
-      What indicates that this is a issue with Script Extender (as opposed to a mod)? 
-      For example: "The game crashes" or "Function `X` returns an unexpected result"
-
-
-- type: textarea
-  attributes:
-    label: Diagnostic Files
-    description: |
-      [this]: ../blob/main/Generate%20BG3%20Diagnostic.bat
-
-      Please download [this] batch file, then run it. Afterwards, a "BG3 Diagnostic Data.txt" file
-      should be present in your `%TEMP%` folder. Please attach that file here, along with any
-      screenshots or files that might help with fixing the issue.
-      
-      Tip: You can attach images or log files by clicking this area to highlight it and then
-      dragging files in.
-
-
-- type: textarea
-  attributes:
-    label: Steps to Reproduce
-    description: |
-      Please describe the steps to reproduce this issue.
-
-    placeholder: |
-      1. [First Step]
-      2. [Second Step]
-      3. [And so on...]
-
-
-- type: textarea
-  attributes:
-    label: Expected Behavior
-    description: |
-      What should be happening? If you don't know, leave what you think should happen.
-
-
-- type: textarea
-  attributes:
-    label: Actual Behavior
-    description: |
-      What is actually happening?
+      The log lists your mods and has your user name in file paths.
