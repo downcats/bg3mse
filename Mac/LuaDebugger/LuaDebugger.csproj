@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Norbyte's Lua debug adapter (LuaDebugger/, built on Windows by
+    LuaDebugger/LuaDebugger.csproj for .NET Framework 4.8) for the .NET that
+    runs on macOS: his sources, his two packages. CMakeLists.txt builds it
+    (BG3MSE_DOTNET) and passes:
+      DbgProtocolSource  DbgProtocol.cs, which his project has protoc write
+                         beside the sources before it compiles (PreBuildEvent)
+                         and which is written to the build directory here.
+    Everything this project writes goes to the build directory too
+    (BaseIntermediateOutputPath, MSBuildProjectExtensionsPath and the publish
+    directory are given on the command line), and the launcher is copied
+    beside what it publishes.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- LuaDebugger.dll alone, run by the launcher beside this file (LuaDebugger)
+         on the .NET the author has installed, this one or a later one. A host
+         program of its own would be one more image to sign. -->
+    <UseAppHost>false</UseAppHost>
+    <SelfContained>false</SelfContained>
+    <RollForward>Major</RollForward>
+    <RootNamespace>NSE.DebuggerFrontend</RootNamespace>
+    <AssemblyName>LuaDebugger</AssemblyName>
+    <!-- His Properties/AssemblyInfo.cs names the assembly. -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>none</DebugType>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- As his project compiles them: no analyzers. -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\LuaDebugger\DAPMessageHandler.cs" />
+    <Compile Include="..\..\LuaDebugger\DAPProtocol.cs" />
+    <Compile Include="..\..\LuaDebugger\DAPStream.cs" />
+    <Compile Include="..\..\LuaDebugger\DAPUtils.cs" />
+    <Compile Include="..\..\LuaDebugger\DbgClient.cs" />
+    <Compile Include="..\..\LuaDebugger\Evaluator.cs" />
+    <Compile Include="..\..\LuaDebugger\Program.cs" />
+    <Compile Include="..\..\LuaDebugger\Properties\AssemblyInfo.cs" />
+    <Compile Include="$(DbgProtocolSource)" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The runtime of the protoc that writes DbgProtocol.cs (External/protobuf, v36.1). -->
+    <PackageReference Include="Google.Protobuf" Version="3.36.1" />
+    <!-- As LuaDebugger/packages.config. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+  <Target Name="RequireDbgProtocolSource" BeforeTargets="CoreCompile">
+    <Error Condition="'$(DbgProtocolSource)' == '' Or !Exists('$(DbgProtocolSource)')"
+           Text="DbgProtocolSource must name the DbgProtocol.cs protoc wrote from LuaDebugger/DbgProtocol.proto." />
+  </Target>
+</Project>

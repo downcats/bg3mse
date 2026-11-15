@@ -1,0 +1,19 @@
+#!/bin/sh
+# Norbyte's Lua debug adapter on macOS: what an editor is given as the
+# adapter's program, where Windows has LuaDebugger.exe. Runs LuaDebugger.dll,
+# which lies beside this file, on the .NET runtime of the machine (10 or
+# later), and passes its standard input and output through: the Debug Adapter
+# Protocol.
+#
+# The runtime is looked for where DOTNET_ROOT says, on the PATH, and where its
+# installers put it; an editor started from the Dock has only the system's PATH.
+here=$(cd "$(dirname "$0")" && pwd)
+for dotnet in "${DOTNET_ROOT:+$DOTNET_ROOT/dotnet}" "$(command -v dotnet 2>/dev/null)" \
+    /usr/local/share/dotnet/dotnet /opt/homebrew/bin/dotnet /usr/local/bin/dotnet "$HOME/.dotnet/dotnet"; do
+    if [ -n "$dotnet" ] && [ -x "$dotnet" ]; then
+        exec "$dotnet" "$here/LuaDebugger.dll" "$@"
+    fi
+done
+echo "LuaDebugger: no .NET runtime was found. The Lua debug adapter needs the .NET Runtime, version 10 or later" >&2
+echo "(https://dotnet.microsoft.com/download/dotnet); set DOTNET_ROOT if it is installed somewhere unusual." >&2
+exit 127
