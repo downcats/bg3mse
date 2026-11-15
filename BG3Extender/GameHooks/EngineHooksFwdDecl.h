@@ -103,7 +103,13 @@ struct TransformSurfaceAction;
 
 using OsirisVariableHelper__SavegameVisitProc = bool(OsirisVariableHelper*, SavegameVisitor*);
 
+#if defined(_MSC_VER)
 using StatsSystem__ThrowDamageEventProc = void(StatsSystem* statsSystem, void* temp5, HitDesc* hit, AttackDesc* attack, bool a5, bool a6);
+#else
+// The macOS game's fifth argument is an ability (EAbility, one byte), not a
+// bool: it is passed on as the byte it is.
+using StatsSystem__ThrowDamageEventProc = void(StatsSystem* statsSystem, void* temp5, HitDesc* hit, AttackDesc* attack, uint8_t a5, bool a6);
+#endif
 
 using SurfaceActionFactoryCreateProc = SurfaceAction* (void* self, SurfaceActionType type, uint64_t actionHandle);
 using TransformSurfaceAction__InitProc = void (TransformSurfaceAction*, SurfaceTransformActionType transformAction, SurfaceLayer8 layer, SurfaceType originSurface);

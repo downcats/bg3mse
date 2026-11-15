@@ -9,6 +9,9 @@
 #include <psapi.h>
 #include <DbgHelp.h>
 #include "resource.h"
+#if !defined(_MSC_VER)
+#include <Mac/Binding/Libraries.h>
+#endif
 
 namespace bg3se
 {
@@ -41,6 +44,7 @@ namespace bg3se
     {
         RegisterSymbols();
 
+#if defined(_MSC_VER)
         SymbolMappingLoader loader(mappings_);
         PreRegisterLibraries(loader);
         if (!loader.LoadBuiltinMappings(IDR_BINARY_MAPPINGS)) {
@@ -69,6 +73,13 @@ namespace bg3se
 
         CriticalInitFailed = CriticalInitFailed || symbolMapper_.HasFailedCriticalMappings();
         InitFailed = InitFailed || symbolMapper_.HasFailedMappings();
+#else
+        // The macOS game is not searched for byte patterns: the members are
+        // bound from the engine table (Mac/Binding/StaticSymbolBinding.h).
+        auto bound = mac::binding::BindLibraries(&GetStaticSymbols());
+        CriticalInitFailed = CriticalInitFailed || bound.CriticalFailed;
+        InitFailed = InitFailed || bound.Failed;
+#endif
 
         if (gExtender->GetConfig().DisableLauncher && !CriticalInitFailed) {
             ApplyCodePatch("KillLauncher");
@@ -95,6 +106,12 @@ namespace bg3se
         auto initStart = std::chrono::high_resolution_clock::now();
 
         symbolMapper_.MapAllSymbols(true);
+#if !defined(_MSC_VER)
+        // The macOS game gives its types their indices in CoreLibSDM::Init:
+        // the type index maps are filled once that has run
+        // (Mac/Binding/TypeIndexBinding.h).
+        mac::binding::BindTypeIndices(&GetStaticSymbols());
+#endif
 
         if (!CriticalInitFailed) {
             GFS.Initialize();
@@ -124,8 +141,14 @@ namespace bg3se
         }
     }
 
+    // Outside MSVC a patch is not bytes of a mapping but instructions of the
+    // macOS game, found and written by Mac/Binding (CodePatches.h): the three
+    // functions below hand over to it, and the two that write bytes are left out.
     bool LibraryManager::WasPatchApplied(std::string const& mapping)
     {
+#if !defined(_MSC_VER)
+        return mac::binding::WasCodePatchApplied(mapping);
+#else
         auto it = mappings_.Mappings.find(mapping);
         if (it == mappings_.Mappings.end()) {
             ERR("Cannot apply patch - no such mapping: '%s'", mapping.c_str());
@@ -138,10 +161,14 @@ namespace bg3se
         }
 
         return applied;
+#endif
     }
 
     bool LibraryManager::ApplyCodePatch(std::string const& mapping)
     {
+#if !defined(_MSC_VER)
+        return mac::binding::ApplyCodePatch(mapping);
+#else
         auto it = mappings_.Mappings.find(mapping);
         if (it == mappings_.Mappings.end()) {
             ERR("Cannot apply patch - no such mapping: '%s'", mapping.c_str());
@@ -159,11 +186,15 @@ namespace bg3se
         }
 
         return hasChanges;
+#endif
     }
 
 
     bool LibraryManager::UndoCodePatch(std::string const& mapping)
     {
+#if !defined(_MSC_VER)
+        return mac::binding::UndoCodePatch(mapping);
+#else
         auto it = mappings_.Mappings.find(mapping);
         if (it == mappings_.Mappings.end()) {
             ERR("Cannot undo patch - no such mapping: '%s'", mapping.c_str());
@@ -176,9 +207,11 @@ namespace bg3se
         }
 
         return hasChanges;
+#endif
     }
 
 
+#if defined(_MSC_VER)
     bool LibraryManager::ApplyPatch(SymbolMappings::Patch& patch)
     {
         if (patch.WasApplied) {
@@ -207,9 +240,21 @@ namespace bg3se
         patch.WasApplied = false;
         return true;
     }
+#endif
 
     bool LibraryManager::GetGameVersion(GameVersionInfo & version)
     {
+#if !defined(_MSC_VER)
+        // The macOS game has no version resource: its version is its
+        // bundle's version string (Mac/Binding/GameVersion.h).
+        auto found = mac::binding::ReadGameVersion();
+        if (!found) return false;
+        version.Major = found->Major;
+        version.Minor = found->Minor;
+        version.Revision = found->Revision;
+        version.Build = found->Build;
+        return true;
+#else
         HMODULE hGameModule = GetModuleHandleW(L"bg3.exe");
         if (hGameModule == NULL) {
             hGameModule = GetModuleHandleW(L"bg3_dx11.exe");
@@ -242,6 +287,7 @@ namespace bg3se
         LocalFree(pResCopy);
         FreeResource(hData);
         return true;
+#endif
     }
 
     void LibraryManager::ShowStartupError(STDString const & msg, bool wait, bool exitGame)

@@ -8,11 +8,19 @@
 #include <ctime>
 #include <psapi.h>
 #include <Lua/Osiris/CallbackManager.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/OsirisLibrary.h>
+#endif
 
 namespace bg3se
 {
 
+#if defined(_MSC_VER)
 #define STATIC_HOOK(name) decltype(OsirisWrappers::name) * decltype(OsirisWrappers::name)::gHook;
+#else
+// Defined in WrappableFunction (CoreLib/Wrappers.h).
+#define STATIC_HOOK(name)
+#endif
 
 STATIC_HOOK(RegisterDivFunctions)
 STATIC_HOOK(InitGame)
@@ -51,6 +59,7 @@ void OsirisWrappers::RegisterDIVFunctionsPreHook(void * Osiris, DivFunctions * F
 
 void OsirisWrappers::Initialize()
 {
+#if defined(_MSC_VER)
     Kernel32Module = LoadLibrary(L"kernel32.dll");
     if (Kernel32Module == NULL) {
         Fail("Could not load kernel32.dll");
@@ -123,6 +132,82 @@ void OsirisWrappers::Initialize()
     CloseHandle.Wrap(Kernel32Module, "CloseHandle");
 
     DetourTransactionCommit();
+#else
+    // The macOS game. The story library's functions, globals and node
+    // vtables come from the engine table, and only when all that the story
+    // layer needs is found and the library's structures are proven
+    // (Mac/Binding/OsirisBinding.h). There is no module to load and nothing
+    // to scan; the two Windows file functions are bridges that the game's own
+    // writing of the story files drives.
+    auto bound = mac::binding::BindOsiris(&Globals);
+    bool hooked = false;
+    if (bound.Available && DetourTransactionBegin() == NO_ERROR) {
+        DetourUpdateThread(GetCurrentThread());
+
+        // As GetProcAddress finding no export leaves a wrap out on Windows,
+        // a hook the binding did not find is left out; the binding refuses
+        // the story layer without RegisterDivFunctions, which hands it the
+        // story.
+        auto const& to = bound.Hooks;
+        RegisterDivFunctions.Wrap(to.RegisterDivFunctions);
+        if (to.InitGame != nullptr) InitGame.Wrap(to.InitGame);
+        if (to.DeleteAllData != nullptr) DeleteAllData.Wrap(to.DeleteAllData);
+        if (to.GetFunctionMappings != nullptr) GetFunctionMappings.Wrap(to.GetFunctionMappings);
+        if (to.OpenLogFile != nullptr) OpenLogFile.Wrap(to.OpenLogFile);
+        if (to.CloseLogFile != nullptr) CloseLogFile.Wrap(to.CloseLogFile);
+        if (to.Load != nullptr) Load.Wrap(to.Load);
+        if (to.Compile != nullptr) Compile.Wrap(to.Compile);
+        if (to.Merge != nullptr) Merge.Wrap(to.Merge);
+        if (to.Event != nullptr) Event.Wrap(to.Event);
+        OriginalRuleActionCallProc = (RuleActionCallProc)to.RuleActionCall;
+        if (OriginalRuleActionCallProc != nullptr) {
+            RuleActionCall.Wrap(OriginalRuleActionCallProc);
+        }
+
+        Call.Wrap(&CallWrapper);
+        Query.Wrap(&QueryWrapper);
+        Error.Wrap(&ErrorWrapper);
+
+        if (to.CreateFileW != nullptr && to.CloseHandle != nullptr) {
+            CreateFileW.Wrap(to.CreateFileW);
+            CloseHandle.Wrap(to.CloseHandle);
+        }
+
+        // A hook that is refused fails the transaction, and none of its
+        // hooks is then made.
+        hooked = DetourTransactionCommit() == NO_ERROR;
+        if (!hooked) {
+            ERR("OsirisWrappers::Initialize(): the story library could not be hooked; nothing of it was changed");
+        }
+    }
+
+    if (hooked) {
+        for (unsigned i = 0; i < std::size(VMTs); i++) {
+            VMTs[i] = (NodeVMT*)bound.Vtables[i];
+        }
+    } else {
+        // Without the story library the game keeps running, and so does the
+        // rest of the extender. The globals are made to point at objects
+        // that are not there, which is what they point at before the game
+        // has made its story: the code that asks for a story function finds
+        // none.
+        static void* noObject{ nullptr };
+        static DebugFlag noFlags{};
+        Globals = OsirisStaticGlobals{};
+        Globals.StringTable = (COsiStringTable***)&noObject;
+        Globals.Variables = (VariableDb**)&noObject;
+        Globals.Types = (OsiTypeDb**)&noObject;
+        Globals.Enums = (EnumDb**)&noObject;
+        Globals.Functions = (FunctionDb**)&noObject;
+        Globals.Objects = (ObjectDb**)&noObject;
+        Globals.Goals = (GoalDb**)&noObject;
+        Globals.Adapters = (AdapterDb**)&noObject;
+        Globals.Databases = (DatabaseDb**)&noObject;
+        Globals.Nodes = (NodeDb**)&noObject;
+        Globals.DebugFlags = &noFlags;
+        ERR("OsirisWrappers::Initialize(): story (Osiris) support is off");
+    }
+#endif
 }
 
 void OsirisWrappers::Shutdown()
@@ -338,6 +423,17 @@ bool OsirisWrappers::ResolveNodeVMTs()
 
 bool OsirisWrappers::ResolveNodeVMTsInternal()
 {
+#if !defined(_MSC_VER)
+    // The macOS library names its node classes' vtables, and Initialize()
+    // received them, all nine or none (Mac/Binding/OsirisBinding.h).
+    for (unsigned i = (unsigned)NodeType::Database; i <= (unsigned)NodeType::Max; i++) {
+        if (VMTs[i] == nullptr) {
+            return false;
+        }
+    }
+
+    return true;
+#else
     auto Db = *Globals.Nodes;
 
 #if 0
@@ -533,6 +629,7 @@ bool OsirisWrappers::ResolveNodeVMTsInternal()
     SaveNodeVMT(NodeType::Proc, procNodeVMT);
     SaveNodeVMT(NodeType::Database, databaseNodeVMT);
     return true;
+#endif
 }
 
 }

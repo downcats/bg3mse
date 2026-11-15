@@ -5,7 +5,12 @@
 namespace bg3se
 {
 
+#if defined(_MSC_VER)
 #define HOOK_DEFN(name, sym, defn) decltype(EngineHooks::name) * decltype(EngineHooks::name)::gHook;
+#else
+// Defined in WrappableFunction (CoreLib/Wrappers.h).
+#define HOOK_DEFN(name, sym, defn)
+#endif
 #include <GameHooks/EngineHooks.inl>
 #undef HOOK_DEFN
 
