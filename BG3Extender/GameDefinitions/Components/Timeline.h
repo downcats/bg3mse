@@ -253,8 +253,21 @@ struct SyncedTimelineActorControlComponent : public BaseComponent
     Guid Timeline;
     uint8_t Slot;
     bool IsListener;
+#if defined(_MSC_VER)
     bool IsAdditional;
     uint8_t field_23;
+#else
+    // The macOS game's component has two bytes here and nothing more before
+    // the word at 0x24: what follows them is padding nothing initialises.
+    // A script written for Windows finds both names here too: they read as
+    // false and 0 and take no value.
+    //# P_STAND_IN(IsAdditional, GetMissingFlag, SetMissingFlag)
+    //# P_STAND_IN(field_23, GetMissingField, SetMissingField)
+    bool GetMissingFlag() const { return false; }
+    void SetMissingFlag(bool) {}
+    uint8_t GetMissingField() const { return 0; }
+    void SetMissingField(uint8_t) {}
+#endif
     int field_24;
 };
 
@@ -618,7 +631,11 @@ struct TimelineSystem : public BaseSystem
     DEFINE_SYSTEM(ClientTimeline, "ecl::TimelineSystem")
 
     [[bg3::hidden]] void* GameEventListenerVMT;
+#if defined(_MSC_VER)
     [[bg3::hidden]] void* field_18;
+#endif
+    // The macOS game's system has its three listeners one after another,
+    // without that word: every member after it is 8 bytes lower there.
     [[bg3::hidden]] void* GameStateEventListenerVMT;
     [[bg3::hidden]] void* DialogEventListenerAdapterVMT;
     [[bg3::hidden]] UnknownSignal TimelineCreatedSignal;

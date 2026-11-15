@@ -40,10 +40,10 @@ BEGIN_SE()
 
 
 
-#define BEGIN_BITMASK_NS(NS, T, luaName, type, ...) template <> constexpr BitfieldTypeId BitfieldID<NS::T> = BitfieldTypeId(ENUM_TYPE_ID(__VA_ARGS__));
-#define BEGIN_ENUM_NS(NS, T, luaName, type, ...) template <> constexpr EnumTypeId EnumID<NS::T> = EnumTypeId(ENUM_TYPE_ID(__VA_ARGS__));
-#define BEGIN_BITMASK(T, type, ...) template <> constexpr BitfieldTypeId BitfieldID<T> = BitfieldTypeId(ENUM_TYPE_ID(__VA_ARGS__));
-#define BEGIN_ENUM(T, type, ...) template <> constexpr EnumTypeId EnumID<T> = EnumTypeId(ENUM_TYPE_ID(__VA_ARGS__));
+#define BEGIN_BITMASK_NS(NS, T, luaName, type, ...) template <> inline constexpr BitfieldTypeId BitfieldID<NS::T> = BitfieldTypeId(ENUM_TYPE_ID(__VA_ARGS__));
+#define BEGIN_ENUM_NS(NS, T, luaName, type, ...) template <> inline constexpr EnumTypeId EnumID<NS::T> = EnumTypeId(ENUM_TYPE_ID(__VA_ARGS__));
+#define BEGIN_BITMASK(T, type, ...) template <> inline constexpr BitfieldTypeId BitfieldID<T> = BitfieldTypeId(ENUM_TYPE_ID(__VA_ARGS__));
+#define BEGIN_ENUM(T, type, ...) template <> inline constexpr EnumTypeId EnumID<T> = EnumTypeId(ENUM_TYPE_ID(__VA_ARGS__));
 #define E(label)
 #define EV(label, value)
 #define END_ENUM_NS()

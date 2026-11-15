@@ -35,8 +35,16 @@ private:
 struct GameObjectTemplate : public ProtectedGameObject<GameObjectTemplate>
 {
     virtual ~GameObjectTemplate() = 0;
+#if defined(_MSC_VER)
     virtual void* GetName(void*) const = 0;
     virtual void* DebugDump(void*) = 0;
+#else
+    // The macOS game's log information and log string, returned in memory
+    // its caller provides (Mac/Layout/DeclaredVirtuals.cpp); what the log
+    // information holds is not declared.
+    virtual struct LogInfo GetName() const = 0;
+    virtual STDString DebugDump() const = 0;
+#endif
     virtual FixedString* GetType() const = 0;
     virtual FixedString* GetRealType() const = 0;
     virtual void SetTransform(Transform const&, void*) = 0;
@@ -54,11 +62,22 @@ struct GameObjectTemplate : public ProtectedGameObject<GameObjectTemplate>
     virtual void UpdateOverrideFlagsFromParent(GameObjectTemplate* other) = 0;
     virtual bool PostLoad() = 0;
     virtual bool HasAIBounds() const = 0;
+#if defined(_MSC_VER)
     virtual void* GetAIBounds1(void*, uint16_t) const = 0;
     virtual void* GetAIBounds2(void*, uint16_t) const = 0;
     virtual double GetAIBounds3(void*, uint16_t) const = 0;
     virtual void* GetAIBounds4(void*, uint16_t) const = 0;
     virtual double GetAIBounds5(void*, uint16_t) const = 0;
+#else
+    // The macOS game's bounds of a type of bound: the minimum and maximum in
+    // s0 to s2, the radius in s0, the shape in w0, the size in s0
+    // (Mac/Layout/DeclaredVirtuals.cpp).
+    virtual glm::vec3 GetAIBounds1(int boundType) const = 0;
+    virtual glm::vec3 GetAIBounds2(int boundType) const = 0;
+    virtual float GetAIBounds3(int boundType) const = 0;
+    virtual uint8_t GetAIBounds4(int boundType) const = 0;
+    virtual float GetAIBounds5(int boundType) const = 0;
+#endif
     virtual void UpdateFadeFromParent(GameObjectTemplate* parent, bool) = 0;
     virtual void UpdateHierarchyOnlyFadeFromParent(GameObjectTemplate* parent, bool) = 0;
     virtual void UpdateSeeThroughFromParent(GameObjectTemplate* parent, bool) = 0;

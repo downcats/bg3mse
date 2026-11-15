@@ -1,3 +1,8 @@
+#if !defined(_MSC_VER)
+// 16-bit characters of the file format, where wchar_t is not 16 bits.
+#include <Mac/Layout/Utf16CharsText.h>
+#endif
+
 BEGIN_NS(vt)
 
 // BG3 tile geometry; GTSFile::ReadHeader() rejects tile sets with a different layout
@@ -133,7 +138,11 @@ struct GTSUniformParameterBlock
 
 struct GTSPageFileInfo
 {
+#if defined(_MSC_VER)
     wchar_t FileNameBuf[256];
+#else
+    mac::Utf16Chars<256> FileNameBuf;
+#endif
 
     uint32_t NumPages;
     Guid Checksum;

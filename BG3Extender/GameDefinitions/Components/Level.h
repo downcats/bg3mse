@@ -152,7 +152,10 @@ struct LevelInstanceLoadSystem : public BaseSystem
 {
     DEFINE_SYSTEM(LevelInstanceLoad, "ls::level::LevelInstanceLoadSystem")
 
+#if defined(_MSC_VER)
+    // The macOS game's system has no signal here.
     [[bg3::hidden]] UnknownSignal field_10;
+#endif
     [[bg3::hidden]] LevelManager* LevelManager;
     [[bg3::hidden]] Queue<EntityHandle> LoadRequests;
     [[bg3::hidden]] CRITICAL_SECTION LoadRequestsCS;

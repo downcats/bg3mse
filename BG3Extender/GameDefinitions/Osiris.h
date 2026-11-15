@@ -113,7 +113,12 @@ struct OsiArgumentValue
             return std::to_string(Int64);
 
         case ValueType::Real:
+#if defined(_MSC_VER)
             return std::to_string(Float);
+#else
+            // In the C locale, as his static C library has it.
+            return bg3se::mac::FloatText(Float);
+#endif
 
         case ValueType::String:
         case ValueType::GuidString:
@@ -410,7 +415,14 @@ struct OsiSequentialArray
 template <class T>
 struct ListNode
 {
+#if defined(_MSC_VER)
     ListNode<T> * Next{ nullptr }, * Head{ nullptr };
+#else
+    // The story library of the macOS game is built with libc++, whose list
+    // node has the previous node first (Mac/Layout/OsirisLayout.h): `Head`,
+    // as the second pointer of the Windows node is called here.
+    ListNode<T> * Head{ nullptr }, * Next{ nullptr };
+#endif
     T Item;
 
     ListNode() {}
@@ -420,6 +432,7 @@ struct ListNode
     {}
 };
 
+#if defined(_MSC_VER)
 template <class T>
 struct List
 {
@@ -474,7 +487,74 @@ struct List
         return item;
     }
 };
+#else
+// libc++'s list (Mac/Layout/OsirisLayout.h): the list holds its end node,
+// then the size. `Head` is that end node, as it is the node the Windows list
+// points to, so the code that walks from Head->Next until it is back at Head
+// reads both. A list built here is linked in both directions, as the
+// library's are.
+//
+// The end node's two pointers are thus reached both as members of the list
+// and as members of a node. The compiler is told so (may_alias): it must not
+// assume that a store through one and a load through the other are apart.
+template <class T>
+struct __attribute__((may_alias)) List
+{
+    ListNode<T> * Last{ nullptr };
+    ListNode<T> * First{ nullptr };
+    uint64_t Size{ 0 };
 
+    ListNode<T> * GetHead() const
+    {
+        return reinterpret_cast<ListNode<T> *>(const_cast<List *>(this));
+    }
+
+    __declspec(property(get = GetHead)) ListNode<T> * Head;
+
+    void Init()
+    {
+        Last = First = GetHead();
+        Size = 0;
+    }
+
+    // The node a Windows list would have for its end is not used.
+    void Init(ListNode<T> *)
+    {
+        Init();
+    }
+
+    void Insert(T const & value, ListNode<T> * item, ListNode<T> * prev)
+    {
+        item->Item = value;
+        Insert(item, prev);
+    }
+
+    ListNode<T> * Insert(T const & value, ListNode<T> * prev)
+    {
+        auto item = new ListNode<T>(value);
+        Insert(item, prev);
+        return item;
+    }
+
+    void Insert(ListNode<T> * item, ListNode<T> * prev)
+    {
+        item->Head = prev;
+        item->Next = prev->Next;
+        prev->Next->Head = item;
+        prev->Next = item;
+        Size++;
+    }
+
+    ListNode<T> * Insert(ListNode<T> * prev)
+    {
+        auto item = new ListNode<T>();
+        Insert(item, prev);
+        return item;
+    }
+};
+#endif
+
+#if defined(_MSC_VER)
 template <typename TKey, typename TVal>
 struct TMapNode
 {
@@ -533,6 +613,71 @@ struct TMap
         }
     }
 };
+#else
+// libc++'s map (Mac/Layout/OsirisLayout.h). A node has its children first,
+// then its parent (`Root`, as the Windows node calls it) and its colour, and
+// a child that is not there is null: no node stands for the end. The map is
+// its first node and its root; the size that follows them is the member the
+// structures here declare after a TMap, as they do on Windows.
+template <typename TKey, typename TVal>
+struct TMapNode
+{
+    struct KeyValuePair
+    {
+        TKey Key;
+        TVal Value;
+    };
+
+    TMapNode<TKey, TVal> * Left;
+    TMapNode<TKey, TVal> * Right;
+    TMapNode<TKey, TVal> * Root;
+    bool Color;
+    KeyValuePair KV;
+};
+
+template <typename TKey, typename TVal, class Pred = std::less<TKey>>
+struct TMap
+{
+    TMapNode<TKey, TVal> * First;
+    TMapNode<TKey, TVal> * Root;
+
+    TVal * Find(TKey const & key)
+    {
+        TMapNode<TKey, TVal> * finalTreeNode = nullptr;
+        auto currentTreeNode = Root;
+        while (currentTreeNode != nullptr)
+        {
+            if (Pred()(currentTreeNode->KV.Key, key)) {
+                currentTreeNode = currentTreeNode->Right;
+            } else {
+                finalTreeNode = currentTreeNode;
+                currentTreeNode = currentTreeNode->Left;
+            }
+        }
+
+        if (finalTreeNode == nullptr || Pred()(key, finalTreeNode->KV.Key))
+            return nullptr;
+        else
+            return &finalTreeNode->KV.Value;
+    }
+
+    template <class Visitor>
+    void Iterate(Visitor visitor)
+    {
+        Iterate(Root, visitor);
+    }
+
+    template <class Visitor>
+    void Iterate(TMapNode<TKey, TVal> * node, Visitor visitor)
+    {
+        if (node != nullptr) {
+            visitor(node->KV.Key, node->KV.Value);
+            Iterate(node->Left, visitor);
+            Iterate(node->Right, visitor);
+        }
+    }
+};
+#endif
 
 
 struct TypeDbLess
@@ -733,7 +878,12 @@ struct Database : public ProtectedGameObject<Database>
     uint32_t DatabaseId;
     void * FactsVMT;
     List<TupleVec> Facts;
+#if defined(_MSC_VER)
     Vector<uint32_t> ParamTypes;
+#else
+    // The macOS library keeps a column's type in 16 bits (Mac/Layout/OsirisLayout.h).
+    Vector<uint16_t> ParamTypes;
+#endif
     uint8_t NumParams;
 };
 
@@ -950,6 +1100,14 @@ struct NodeVMT
     using GetQueryNameProc = const char * (*)(Node * self);
 
     DestroyProc Destroy; // 0
+#if !defined(_MSC_VER)
+    // The macOS library's vtables (Itanium C++ ABI) have two destructor
+    // slots, hold the four tuple functions in the order the library declares
+    // them, and end after the last function of their class: only the query
+    // nodes have CallQuery and GetQueryName. A NodeVMT is a view of the
+    // slots a node class has, never an object to copy.
+    DestroyProc DestroyAndFree;
+#endif
     GetDatabaseRefProc GetDatabaseRef; // 8
     GetDatabaseRefProc GetDatabaseRef2; // 10
     IsDataNodeProc IsDataNode; // 18
@@ -959,10 +1117,17 @@ struct NodeVMT
     GetParentProc GetParent; // 38
     SetNextNodeProc SetNextNode; // 40
     GetAdapterProc GetAdapter; // 48
+#if defined(_MSC_VER)
     InsertTupleProc InsertTuple; // 50
     PushDownTupleProc PushDownTuple; // 58
     InsertTupleProc DeleteTuple; // 60
     PushDownTupleProc PushDownTupleDelete; // 68
+#else
+    PushDownTupleProc PushDownTuple;
+    PushDownTupleProc PushDownTupleDelete;
+    InsertTupleProc InsertTuple;
+    InsertTupleProc DeleteTuple;
+#endif
     TriggerInsertEventProc TriggerInsertEvent; // 70
     TriggerInsertEventProc TriggerDeleteEvent; // 78
     GetLowDatabaseRefProc GetLowDatabaseRef; // 80
@@ -992,10 +1157,18 @@ public:
     virtual NodeRef * GetParent(NodeRef * Node) = 0;
     virtual void SetNextNode(NodeEntryRef * Node) = 0;
     virtual Adapter * GetAdapter(EntryPoint Which) = 0;
+#if defined(_MSC_VER)
     virtual void InsertTuple(TuplePtrLL* Tuple) = 0;
     virtual void PushDownTuple(SmallTuple* Tuple, uint32_t Adapter, EntryPoint Which) = 0;
     virtual void DeleteTuple(TuplePtrLL* Tuple) = 0;
     virtual void PushDownTupleDelete(SmallTuple* Tuple, uint32_t Adapter, EntryPoint Which) = 0;
+#else
+    // The order of the macOS library's vtables (see NodeVMT).
+    virtual void PushDownTuple(SmallTuple* Tuple, uint32_t Adapter, EntryPoint Which) = 0;
+    virtual void PushDownTupleDelete(SmallTuple* Tuple, uint32_t Adapter, EntryPoint Which) = 0;
+    virtual void InsertTuple(TuplePtrLL* Tuple) = 0;
+    virtual void DeleteTuple(TuplePtrLL* Tuple) = 0;
+#endif
     virtual void TriggerInsertEvent(TupleVec * Tuple) = 0;
     virtual void TriggerInsertEvent2(TupleVec * Tuple) = 0;
     virtual NodeRef * GetLowDatabaseRef(NodeRef * Node) = 0;

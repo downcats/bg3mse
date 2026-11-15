@@ -452,7 +452,10 @@ struct [[bg3::component]] SoundVolumeTrigger : public bg3se::SoundVolumeTrigger
 {
     DEFINE_PROXY_COMPONENT(ServerSoundVolumeTrigger, "esv::SoundVolumeTrigger")
 
+#if defined(_MSC_VER)
+    // The macOS game's object has no such word: the entity follows the base.
     [[bg3::hidden]] __int64 field_A8;
+#endif
     EntityHandle Entity;
 };
 
@@ -632,7 +635,10 @@ struct [[bg3::component]] TimelineSceneTrigger : public bg3se::TimelineSceneTrig
 {
     DEFINE_PROXY_COMPONENT(ServerTimelineSceneTrigger, "esv::TimelineSceneTrigger")
 
+#if defined(_MSC_VER)
+    // The macOS game's object has no such word: the entity follows the base.
     [[bg3::hidden]] void* field_A8;
+#endif
     EntityHandle Entity;
 };
 
@@ -776,7 +782,16 @@ struct [[bg3::component]] TimelineSceneTrigger : public bg3se::TimelineSceneTrig
 {
     DEFINE_PROXY_COMPONENT(ClientTimelineSceneTrigger, "ecl::TimelineSceneTrigger")
 
+#if defined(_MSC_VER)
+    // The macOS game's object has no such word: the entity follows the base.
     uint64_t field_A8;
+#else
+    // A script written for Windows finds the name here too: it reads as 0
+    // and takes no value.
+    //# P_GETTER_SETTER(field_A8, GetMissingField, SetMissingField)
+    uint64_t GetMissingField() const { return 0; }
+    void SetMissingField(uint64_t) {}
+#endif
     EntityHandle Entity;
 };
 

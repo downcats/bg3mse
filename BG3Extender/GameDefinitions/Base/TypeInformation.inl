@@ -300,9 +300,19 @@ void TypeInformationRepository::Finalize()
 {
     lua::gModuleRegistry.RegisterTypeInformation();
 
+#if defined(_MSC_VER)
     for (auto type : initializers_) {
         type->DeferredInitialize();
     }
+#else
+    // An initializer can be the first to ask for another type's static type
+    // information, which registers itself when it is made
+    // (GetStaticTypeInfoInternal): the array grows, and moves, while it is
+    // walked. By index, and up to the size it has by then.
+    for (uint32_t i = 0; i < initializers_.size(); i++) {
+        initializers_[i]->DeferredInitialize();
+    }
+#endif
 
     for (auto& type : types_) {
         type.Value->DeferredInitialize();

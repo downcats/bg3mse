@@ -137,11 +137,19 @@ struct StaticSymbols : Noncopyable<StaticSymbols>
     Visual__UpdateBlendshapeWeightsFromSkeletonProc* ls__Visual__UpdateBlendshapeWeightsFromSkeleton{ nullptr };
 
     std::atomic<uint32_t>* Noesis__Reflection__LockedByThreadId{ nullptr };
+#if defined(_MSC_VER)
     SRWLOCK* Noesis__Reflection__Lock{ nullptr };
+#else
+    mac::GameNoesisSpinLock* Noesis__Reflection__Lock{ nullptr };
+#endif
     std::atomic<uint32_t>* Noesis__Reflection__NumLocks{ nullptr };
     void* Noesis__Reflection__Data{ nullptr };
 
+#if defined(_MSC_VER)
     SRWLOCK* Noesis__SymbolManager__Lock{ nullptr };
+#else
+    mac::GameNoesisSpinLock* Noesis__SymbolManager__Lock{ nullptr };
+#endif
     void* Noesis__SymbolManager__Data{ nullptr };
     void** Noesis__gErrorHandler{ nullptr };
     void* Noesis__GUI__LoadXaml{ nullptr };

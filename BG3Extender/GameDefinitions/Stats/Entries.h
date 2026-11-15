@@ -231,6 +231,12 @@ struct TreasureCategoryItem
     int Unique;
     int MinLevel;
     int MaxLevel;
+#if !defined(_MSC_VER)
+    // The macOS game counts here the categories that list the item, and
+    // frees the item when the last of them is destroyed. An item made here
+    // is listed by the one category it is read into.
+    [[bg3::hidden]] int8_t Categories{ 1 };
+#endif
 };
 
 struct TreasureCategory

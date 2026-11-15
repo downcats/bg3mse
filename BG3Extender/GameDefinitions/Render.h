@@ -41,6 +41,7 @@ struct MoveableObject : ProtectedGameObject<MoveableObject>
     virtual uint32_t GetRTTI() = 0;
     virtual ~MoveableObject() = 0;
 
+#if defined(_MSC_VER)
     virtual void SetWorldTranslate(glm::vec3 const& translate) = 0;
     virtual void SetWorldRotate(glm::quat const& rotate) = 0;
     virtual void SetWorldScale(glm::vec3 const& scale) = 0;
@@ -64,6 +65,30 @@ struct MoveableObject : ProtectedGameObject<MoveableObject>
     virtual char const* GetDebugName() const = 0;
     virtual StringView GetStrDebugName() = 0;
     virtual void GetDebugInfo(ScratchString &) const = 0;
+#else
+    // The macOS game's order: the overloads of one name as they are written,
+    // no CalculateTextureLOD and no debug names, and IsInitialized at the end.
+    virtual void SetWorldTranslate(glm::vec3 const& translate) = 0;
+    virtual void SetWorldRotate(glm::quat const& rotate) = 0;
+    virtual void SetWorldScale(glm::vec3 const& scale) = 0;
+    virtual void SetWorldTransform(glm::vec3 const& translate, glm::quat const& rotate, glm::vec3 const& scale) = 0;
+    virtual void SetWorldTransform(Transform const& transform) = 0;
+
+    virtual void SetLocalTranslate(glm::vec3 const& translate) = 0;
+    virtual void SetLocalRotate(glm::quat const& rotate) = 0;
+    virtual void SetLocalScale(glm::vec3 const& scale) = 0;
+    virtual void SetLocalTransform(glm::vec3 const& translate, glm::quat const& rotate, glm::vec3 const& scale) = 0;
+    virtual void SetLocalTransform(Transform const& mat) = 0;
+
+    virtual void SetTextureLOD(uint8_t, uint8_t, uint64_t) = 0;
+    virtual uint16_t GetCullFlags(uint16_t&) = 0;
+    virtual void SetSomeCullFlag(void*, bool) = 0;
+    virtual void ToggleCullFlag600(bool cull) = 0;
+    virtual bool AttachToScene(Scene* scene) = 0;
+    virtual bool DetachFromScene() = 0;
+    virtual bool IsAttachedToScene() = 0;
+    virtual bool IsInitialized() = 0;
+#endif
 
     Transform WorldTransform;
     LocalTransform* LocalTransform;
@@ -501,7 +526,12 @@ struct BasicModel : ProtectedGameObject<BasicModel>
     static constexpr uint32_t StaticRTTI = 0x1000000;
 
     virtual uint32_t GetRTTI() = 0;
+#if defined(_MSC_VER)
     virtual void Destroy() = 0;
+#else
+    // The macOS game has the model's two destructor slots here.
+    virtual ~BasicModel() = 0;
+#endif
 
     FixedString Name;
     FixedString Id;

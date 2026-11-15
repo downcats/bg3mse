@@ -32,11 +32,21 @@ public:
     void WriteUnlock();
 
 private:
+#if defined(_MSC_VER)
     static constexpr DWORD NullThreadId = 0xffffffffu;
 
     std::atomic<uint32_t> FastLock;
     DWORD OwningThreadId{ NullThreadId };
     std::atomic<uint32_t> WriteEnterCount{ 0 };
+#else
+    // ls::RecursiveSRWLock<ls::SRWSpinLock> of the Mac game: the owner is a
+    // 64-bit word (Mac/Layout/GameLocks.h, GameRecursiveSpinLock).
+    static constexpr uint64_t NullThreadId = mac::kNoRecursiveOwner;
+
+    std::atomic<uint32_t> FastLock;
+    uint64_t OwningThreadId{ NullThreadId };
+    std::atomic<uint32_t> WriteEnterCount{ 0 };
+#endif
 
     void WriteWait();
     void ReadWait();
@@ -58,11 +68,21 @@ public:
     void WriteUnlock();
 
 private:
+#if defined(_MSC_VER)
     static constexpr DWORD NullThreadId = 0xffffffffu;
 
     SRWLOCK Lock;
     DWORD OwningThreadId{ NullThreadId };
     std::atomic<uint32_t> WriteEnterCount{ 0 };
+#else
+    // ls::RecursiveSRWLock<ls::SRWKernelLock> of the Mac game: the owner is
+    // a 64-bit word (Mac/Layout/GameLocks.h, GameRecursiveKernelLock).
+    static constexpr uint64_t NullThreadId = mac::kNoRecursiveOwner;
+
+    SRWLOCK Lock;
+    uint64_t OwningThreadId{ NullThreadId };
+    std::atomic<uint32_t> WriteEnterCount{ 0 };
+#endif
 };
 
 END_SE()

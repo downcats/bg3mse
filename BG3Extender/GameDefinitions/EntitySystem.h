@@ -1,6 +1,9 @@
 #pragma once
 
 #include <GameDefinitions/Base/Base.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/GameEntityRef.h>
+#endif
 
 BEGIN_SE()
 
@@ -102,28 +105,48 @@ inline uint64_t HashMapHash<ecs::ComponentTypeIndex>(ecs::ComponentTypeIndex con
 }
 
 template <class T>
+#if defined(_MSC_VER)
 struct alignas(64) MPMCQueueSlot
+#else
+struct alignas(128) MPMCQueueSlot
+#endif
 {
     std::atomic<uint64_t> NextAndFlags;
     T Value;
 };
 
 template <class T>
+#if defined(_MSC_VER)
 struct alignas(64) MPMCQueueBounded : public ProtectedGameObject<MPMCQueueBounded<T>>
+#else
+struct alignas(128) MPMCQueueBounded : public ProtectedGameObject<MPMCQueueBounded<T>>
+#endif
 {
     uint64_t Capacity;
     MPMCQueueSlot<T>* Slots;
+#if defined(_MSC_VER)
     struct alignas(64) {
+#else
+    struct alignas(128) {
+#endif
         uint64_t WriteIndex;
     };
+#if defined(_MSC_VER)
     struct alignas(64) {
+#else
+    struct alignas(128) {
+#endif
         uint64_t ReadIndex;
     };
 };
 
 
 template <class T>
+#if defined(_MSC_VER)
 struct alignas(64) SynchronizedMPMCQueueBounded : public ProtectedGameObject<SynchronizedMPMCQueueBounded<T>>
+#else
+struct alignas(128) SynchronizedMPMCQueueBounded : public ProtectedGameObject<SynchronizedMPMCQueueBounded<T>>
+#endif
 {
     SRWLOCK Lock;
     MPMCQueueBounded<T> Queue;
@@ -430,9 +453,17 @@ struct FieldTracker
     };
 
     virtual ~FieldTracker();
+#if defined(_MSC_VER)
     virtual void Add(EntityHandle entity, void* component) = 0;
     virtual void FireEvents() = 0;
     virtual void Remove(EntityHandle entity) = 0;
+#else
+    // The macOS game's order (the two overloads of one name, as written),
+    // and its entity passed by reference.
+    virtual void Add(EntityHandle const& entity, void* component) = 0;
+    virtual void Remove(EntityHandle const& entity) = 0;
+    virtual void FireEvents() = 0;
+#endif
 
     Signal<FieldChangeData*> ChangeEvent;
     HashMap<EntityHandle, FieldChangeData> Changes;
@@ -636,7 +667,12 @@ struct ComponentPool : public ProtectedGameObject<ComponentPool>
     void* DtorProc;
 };
 
+#if defined(_MSC_VER)
 using ComponentSignal = Signal<EntityRef*, void*>;
+#else
+// The macOS game passes the entity by value, in two registers.
+using ComponentSignal = Signal<mac::binding::GameEntityRef, void*>;
+#endif
 
 struct ComponentCallbacks : public ProtectedGameObject<ComponentCallbacks>
 {

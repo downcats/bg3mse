@@ -35,6 +35,14 @@ void SurfaceManager::AddAction(SurfaceAction* action)
 
     if (action->GetTypeId() == SurfaceActionType::TransformSurface) {
         auto initProc = GetStaticSymbols().esv__TransformSurfaceAction__Init;
+#if !defined(_MSC_VER)
+        // An entry the engine table did not resolve on this game.
+        if (!initProc) {
+            ERR("Cannot add a transform surface action: the game function is unavailable on this game");
+            action->Level = nullptr;
+            return;
+        }
+#endif
         auto transform = static_cast<TransformSurfaceAction*>(action);
         initProc(transform, transform->SurfaceTransformAction, transform->SurfaceLayer, transform->OriginSurface);
     }
@@ -49,6 +57,15 @@ BEGIN_NS(esv::surface)
 
 Surface* SurfaceComponent::GetSurface(lua_State* L) const
 {
+#if !defined(_MSC_VER)
+    // The level manager is kept back on a game whose levels are not laid out
+    // as this build declares them (Mac/Binding/Layouts.h).
+    auto levelManager = bg3se::lua::State::FromLua(L)->GetExtensionState().GetLevelManager();
+    if (!levelManager) {
+        luaL_error(L, "The surface is unavailable: the level manager is unavailable on this game");
+        return nullptr;
+    }
+#endif
     auto level = bg3se::lua::State::FromLua(L)->GetExtensionState().GetLevelManager()->CurrentLevel;
     if (!level) return nullptr;
 

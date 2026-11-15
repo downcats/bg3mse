@@ -9,6 +9,10 @@
 #include <Extender/Shared/ExtensionState.h>
 #include <Extender/Server/ExtensionStateServer.h>
 #include <Extender/Client/ExtensionStateClient.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/ComponentSignals.h>
+#include <Mac/Layout/GameEntityWorld.h>
+#endif
 
 #undef DEBUG_INDEX_MAPPINGS
 
@@ -118,6 +122,21 @@ constexpr const unsigned FrameAllocatorComponentsAggregate[14][9] = {
     COMPS_PER_BUCKET_AGGREGATE(12),
     COMPS_PER_BUCKET_AGGREGATE(13)
 };
+#if !defined(_MSC_VER)
+// The macOS game's tables, which its code is checked to use at run time
+static_assert([] {
+    for (unsigned size = 0; size < 65; size++) {
+        if (ComponentSizeBuckets[size] != mac::kFrameSizeBuckets[size]) return false;
+    }
+    for (unsigned bucket = 0; bucket < 14; bucket++) {
+        for (unsigned page = 0; page < 9; page++) {
+            if (FrameAllocatorComponentsPerPage[bucket][page] != mac::kFrameComponentsPerPage[bucket][page]
+                || FrameAllocatorComponentsAggregate[bucket][page] != mac::kFrameComponentsAggregate[bucket][page]) return false;
+        }
+    }
+    return true;
+}());
+#endif
 
 
 void* QueryDescription::GetFirstMatchingComponent(std::size_t componentSize)
@@ -221,7 +240,17 @@ void* FrameAllocator::Allocate(uint16_t size)
 
 FrameAllocator::FrameBuffer* FrameAllocator::AllocPage()
 {
+#if defined(_MSC_VER)
     auto page = GameAllocRaw(PageSize);
+#else
+    // The macOS game's pages are 64-byte aligned with a zeroed 64-byte header, and it releases them with free()
+    void* page{ nullptr };
+    if (posix_memalign(&page, 64, PageSize) != 0) {
+        ERR("Failed to allocate a %llu byte ECS frame page", (unsigned long long)PageSize);
+        std::terminate();
+    }
+    memset(page, 0, 64);
+#endif
     FrameBuffers[0].push_back(page);
     return static_cast<FrameBuffer*>(page);
 }
@@ -444,6 +473,16 @@ ImmediateWorldCache::ComponentChanges* ImmediateWorldCache::Changes::GetOrAddCom
 
 bool ImmediateWorldCache::RemoveComponent(EntityHandle entity, ComponentTypeIndex type)
 {
+#if !defined(_MSC_VER)
+    // Not on a game whose code calls the component's subscribers otherwise than they are called below.
+    if (!mac::binding::ComponentSignalsConfirmed(EntityWorld->ComponentOps.Get(type), Callbacks->Get(type), EntityWorld)) {
+        return false;
+    }
+    // The macOS game's cache only has changes for the 0x880 types that are not one-frame
+    if (IsOneFrame(type)) {
+        return false;
+    }
+#endif
     auto typeInfo = EntityWorld->ComponentRegistry_.Get(type);
     if (!typeInfo) {
         return false;
@@ -464,7 +503,12 @@ bool ImmediateWorldCache::RemoveComponent(EntityHandle entity, ComponentTypeInde
             .Handle = entity,
             .World = EntityWorld
         };
+#if defined(_MSC_VER)
         onDestroy.Invoke(&e, component);
+#else
+        // The macOS game's subscribers take the entity by value.
+        onDestroy.Invoke(mac::binding::GameEntityRef{ e.Handle.Handle, e.World }, component);
+#endif
 
         // Default change means deletion
         change = changes->Components.add(entity, ComponentChange{});
@@ -477,6 +521,16 @@ bool ImmediateWorldCache::RemoveComponent(EntityHandle entity, ComponentTypeInde
 
 bool ImmediateWorldCache::PrepareAddComponent(EntityHandle entity, ComponentTypeIndex type, void*& component)
 {
+#if !defined(_MSC_VER)
+    // Not on a game whose code calls the component's subscribers otherwise than they are called by FinalizeAddComponent.
+    if (!mac::binding::ComponentSignalsConfirmed(EntityWorld->ComponentOps.Get(type), Callbacks->Get(type), EntityWorld)) {
+        return false;
+    }
+    // The macOS game's cache only has changes for the 0x880 types that are not one-frame
+    if (IsOneFrame(type)) {
+        return false;
+    }
+#endif
     auto typeInfo = EntityWorld->ComponentRegistry_.Get(type);
     if (!typeInfo || EntityWorld->GetCommittedComponent(entity, type, typeInfo->InlineSize)) {
         return false;
@@ -507,7 +561,12 @@ void ImmediateWorldCache::FinalizeAddComponent(EntityHandle entity, ComponentTyp
         .Handle = entity,
         .World = EntityWorld
     };
+#if defined(_MSC_VER)
     onConstruct.Invoke(&e, component);
+#else
+    // The macOS game's subscribers take the entity by value.
+    onConstruct.Invoke(mac::binding::GameEntityRef{ e.Handle.Handle, e.World }, component);
+#endif
 }
 
 ECSComponentDataMap::ECSComponentDataMap()
@@ -2042,6 +2101,11 @@ void ClientEntitySystemHelpers::Setup()
 
 EntityWorld* ServerEntitySystemHelpers::GetEngineEntityWorld() const
 {
+#if !defined(_MSC_VER)
+    // The helpers are first bound from PostStartup, which on macOS runs
+    // before the game has made its server: no world yet, which Bind allows.
+    if (GetStaticSymbols().GetEoCServer() == nullptr) return nullptr;
+#endif
     return GetStaticSymbols().GetEoCServer()->EntityWorld;
 }
 
@@ -2066,6 +2130,10 @@ std::optional<NetId> ServerEntitySystemHelpers::EntityToNetId(EntityHandle entit
 
 EntityWorld* ClientEntitySystemHelpers::GetEngineEntityWorld() const
 {
+#if !defined(_MSC_VER)
+    // As for the server: no client yet when PostStartup binds the helpers.
+    if (GetStaticSymbols().GetEoCClient() == nullptr) return nullptr;
+#endif
     return GetStaticSymbols().GetEoCClient()->EntityWorld;
 }
 

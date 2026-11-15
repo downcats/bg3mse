@@ -1,6 +1,10 @@
 #include <GameDefinitions/Status.h>
 #include <GameDefinitions/Character.h>
 #include <GameDefinitions/Item.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/StatusVfx.h>
+#include <GameDefinitions/Components/All.h>
+#endif
 
 BEGIN_NS(lua)
 
@@ -78,6 +82,20 @@ void MakePolymorphicRef(lua_State* L, ecl::Status* v, LifetimeHandle lifetime)
 
 void MakePolymorphicRef(lua_State* L, ecl::StatusVFX* v, LifetimeHandle lifetime)
 {
+#if !defined(_MSC_VER)
+    // The macOS game's vtables are not the five slots of StatusVFXVMT and its
+    // code is not x86: the class is told by the object's vtable, for the same
+    // classes as below (Mac/Binding/StatusVfx.h).
+    switch (mac::binding::ClassOfStatusVfx(v)) {
+    case mac::binding::StatusVfxClass::BoostMaterial: MakeDirectObjectRef(L, static_cast<ecl::StatusVFXBoostMaterial*>(v), lifetime); break;
+    case mac::binding::StatusVfxClass::ApplyEffect: MakeDirectObjectRef(L, static_cast<ecl::StatusVFXApplyEffect*>(v), lifetime); break;
+    case mac::binding::StatusVfxClass::Effect: MakeDirectObjectRef(L, static_cast<ecl::StatusVFXEffect*>(v), lifetime); break;
+    case mac::binding::StatusVfxClass::Visual: MakeDirectObjectRef(L, static_cast<ecl::StatusVisual*>(v), lifetime); break;
+    case mac::binding::StatusVfxClass::Managed: MakeDirectObjectRef(L, static_cast<ecl::ManagedStatusVFX*>(v), lifetime); break;
+    case mac::binding::StatusVfxClass::Beam: MakeDirectObjectRef(L, static_cast<ecl::StatusVFXBeam*>(v), lifetime); break;
+    default: MakeDirectObjectRef(L, v, lifetime); break;
+    }
+#else
     // add rcx, 18h
     // Insn for chain-calling EffectHandler::UpdateSafe
     const uint8_t vfxEffect[4] = { 0x48, 0x83, 0xc1, 0x18 };
@@ -125,6 +143,7 @@ void MakePolymorphicRef(lua_State* L, ecl::StatusVFX* v, LifetimeHandle lifetime
 
     // Aura, Material statuses unused
     MakeDirectObjectRef(L, v, lifetime);
+#endif
 }
 
 END_NS()
@@ -148,6 +167,20 @@ RefReturn<esv::Character> Character::LuaGetSelf() const
     return const_cast<esv::Character*>(this);
 }
 
+#if !defined(_MSC_VER)
+// What the game's esv::inventory::InteractionSystem::GetMainInventory gives
+// for an entity that has an inventory owner component: that component's
+// primary inventory.
+EntityHandle Character::GetInventory() const
+{
+    auto ecs = MyHandle.World ? gExtender->GetECS(MyHandle.World) : nullptr;
+    if (!ecs) return EntityHandle{};
+
+    auto owner = ecs->GetComponent<bg3se::inventory::OwnerComponent>(MyHandle.Handle);
+    return owner ? owner->PrimaryInventory : EntityHandle{};
+}
+
+#endif
 RefReturn<esv::Item> Item::LuaGetSelf() const
 {
     WARN_ONCE("entity.ServerItem.Item is deprecated; use entity.ServerItem instead");

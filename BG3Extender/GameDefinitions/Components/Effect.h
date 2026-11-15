@@ -257,7 +257,12 @@ struct EffectsManager : public BaseSystem
     [[bg3::hidden]] void* VMT_IWorkerThreadListener;
     [[bg3::hidden]] UnknownSignal OverlayMaterialRequestSignal;
     bool CanUpdate;
+#if defined(_MSC_VER)
     [[bg3::readonly]] uint32_t FxCreateThreadId;
+#else
+    // The macOS game keeps a thread's id in 64 bits.
+    [[bg3::readonly]] uint64_t FxCreateThreadId;
+#endif
     Array<DestroyEffectStruct> DestroyEffectData;
     [[bg3::hidden]] Queue<EffectInvoke> Invokes;
     [[bg3::hidden]] CRITICAL_SECTION InvokesCS;

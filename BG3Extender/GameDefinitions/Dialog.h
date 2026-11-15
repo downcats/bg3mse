@@ -518,6 +518,11 @@ struct DialogManager : public ProtectedGameObject<DialogManager>
     LegacyRefMap<Guid, SpeakerGroup> SpeakerGroups;
     LegacyRefMap<int, Guid> DialogToVariable;
     Array<int32_t> field_F8;
+#if !defined(_MSC_VER)
+    // The macOS game's manager has another array before its lock, of 8-byte
+    // elements its Update walks.
+    [[bg3::hidden]] Array<void*> field_108;
+#endif
     [[bg3::hidden]] CRITICAL_SECTION CriticalSection;
     [[bg3::hidden]] ModManager* ModManager;
 };
@@ -541,8 +546,14 @@ struct [[bg3::hidden]] SharedDialogGameInterface : public ProtectedGameObject<Sh
     virtual float GetDefaultNodeWaitTime() const;
     virtual void fun03();
 
+#if defined(_MSC_VER)
     uint64_t DialogIOLoadRequests_MPSCQueue[27];
     uint64_t DialogIOLoadRequests_MPSCQueue2[27];
+#else
+    // The macOS game's queues are a word shorter.
+    uint64_t DialogIOLoadRequests_MPSCQueue[26];
+    uint64_t DialogIOLoadRequests_MPSCQueue2[26];
+#endif
     Array<void*> DialogIOLoadRequests;
     DialogManager* DialogManager;
     Pool DialogGameData_Pool;

@@ -136,8 +136,14 @@ struct GenomeNodeTemplate : public ProtectedGameObject<GenomeNodeTemplate>
     virtual bool CreateAndLinkOutputSockets(GenomeSequenceCompilationContext&, GenomeCompilerNode const&) = 0;
     virtual bool CreateAndLinkInputSockets(GenomeSequenceCompilationContext&, GenomeCompilerNode const&) = 0;
     virtual bool ValidateAnyTypeSocket(GenomeSequenceCompilationContext&, GenomeCompilerNode const&, GenomeCompilerFunctionDataSocket const&, bool) = 0;
+#if defined(_MSC_VER)
     virtual VariableIndex& GetSocketVariable(VariableIndex&, GenomeSequenceCompilationContext&, GenomeCompilerNode const&, GenomeCompilerFunctionDataSocket const&, int, bool) = 0;
     virtual VariableIndex& GetOutputSocketPassthrough(VariableIndex&, GenomeSequenceCompilationContext&, GenomeCompilerNode const&, GenomeCompilerFunctionDataSocket const&, int) = 0;
+#else
+    // The macOS game returns the variable's index in w0.
+    virtual VariableIndex GetSocketVariable(GenomeSequenceCompilationContext&, GenomeCompilerNode const&, GenomeCompilerFunctionDataSocket const&, int, bool) = 0;
+    virtual VariableIndex GetOutputSocketPassthrough(GenomeSequenceCompilationContext&, GenomeCompilerNode const&, GenomeCompilerFunctionDataSocket const&, int) = 0;
+#endif
     virtual bool ResolveDataInputs(GenomeSequenceCompilationContext&, GenomeCompilerNode const&) = 0;
     virtual bool HandleResolveDataInput(GenomeSequenceCompilationContext&, FixedString const&, CompactSet<GenomeCompilerSocket*> const&) = 0;
     virtual bool HandleResolveDataSocket(GenomeSequenceCompilationContext&, FixedString const&, GenomeCompilerSocket const*, uint64_t) = 0;
@@ -345,8 +351,13 @@ struct [[bg3::hidden]] GenomeManager : public ProtectedGameObject<GenomeManager>
     LegacyRefMap<STDString, BlueprintInstanceData> LoadedBlueprints;
     LegacyRefMap<GenomeBlueprint*, STDString> BlueprintsToPath;
     SRWLOCK BlueprintInstantiationRWLock;
+#if defined(_MSC_VER)
     int LockThreadID;
     int LockWriteEnterCount;
+#else
+    uint64_t LockThreadID;
+    uint32_t LockWriteEnterCount;
+#endif
     // Editor only?
     // __int64 field_B0;
     Array<void*> SourceReaderPlugins;
@@ -358,8 +369,11 @@ struct [[bg3::hidden]] GenomeManager : public ProtectedGameObject<GenomeManager>
     SynchronizedMPMCQueueBounded<GenomeBlueprint*> UnloadQueue;
     void* UnloadBatch;
     void* UnloadBatchJob;
+#if defined(_MSC_VER)
+    // The macOS game's manager has neither of these two.
     CRITICAL_SECTION PendingBlueprintsLock;
     Array<std::pair<bool, Path>> PendingBlueprints;
+#endif
     double SyncedTime;
     double LastSyncTime;
     bool IsMasterTime;

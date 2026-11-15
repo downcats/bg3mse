@@ -42,7 +42,11 @@ P(AiSteeringMachine)
 P(OsirisController)
 P(StatusManager)
 P(PlayerData)
+#if defined(_MSC_VER)
 P(Inventory)
+#else
+P_STAND_IN(Inventory, GetInventory, SetMissingInventory)
+#endif
 P(OwnerCharacter)
 P(FollowCharacter)
 P(EnemyCharacter)

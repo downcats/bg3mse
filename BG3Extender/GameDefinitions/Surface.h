@@ -64,8 +64,15 @@ struct SurfaceAction : ProtectedGameObject<SurfaceAction>
     virtual SurfaceType GetSurfaceType() = 0;
     virtual EntityHandle GetOwner() = 0;
     virtual glm::vec3 const& GetPosition() = 0;
+#if defined(_MSC_VER)
     virtual Guid* GetTeam(Guid& teamId, bool) = 0;
     virtual Guid* GetCombat(Guid& combatId, bool) = 0;
+#else
+    // The macOS game returns the team in two registers and the combat as the
+    // turn-based area's entity handle, in one (Mac/Layout/DeclaredVirtuals.cpp).
+    virtual Guid GetTeam(bool) const = 0;
+    virtual uint64_t GetCombat(bool) const = 0;
+#endif
     virtual std::optional<uint16_t> GetSurfaceConcentrationTarget() = 0;
     virtual void BreakConcentration() = 0;
     virtual void Enter() = 0;

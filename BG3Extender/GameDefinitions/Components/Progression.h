@@ -116,7 +116,10 @@ struct ManagementSystem : public BaseSystem
     HashMap<EntityHandle, int> ProgressionUpdates;
     [[bg3::hidden]] void* ImmutableDataHeadmaster;
     [[bg3::hidden]] void* RPGStats;
+#if defined(_MSC_VER)
+    // The macOS game's system ends before this.
     [[bg3::hidden]] CriticalSection CS_;
+#endif
 };
 
 END_NS()

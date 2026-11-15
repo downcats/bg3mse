@@ -15,6 +15,9 @@
 
 #include <GameDefinitions/Ai.inl>
 #include <GameDefinitions/Base/Lock.inl>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/TemplateBank.h>
+#endif
 
 namespace bg3se
 {
@@ -143,7 +146,13 @@ namespace bg3se
         auto gtm = GetStaticSymbols().GetGlobalTemplateManager();
         if (!gtm) return nullptr;
 
-#if defined(OSI_EOCAPP)
+#if !defined(_MSC_VER)
+        // The macOS game keeps the index in a global byte and, when that byte
+        // says so, in a byte of the calling thread (Mac/Binding/TemplateBank.h).
+        auto slot = mac::binding::CurrentTemplateBankIndex();
+        if (slot < 0 || slot >= (int)gtm->Banks.size()) return nullptr;
+        return gtm->Banks[slot];
+#elif defined(OSI_EOCAPP)
         auto tls = *(uint64_t*)__readgsqword(0x58);
         auto slot = ((uint8_t*)tls)[8];
         return gtm->Banks[slot];
@@ -260,6 +269,16 @@ namespace bg3se
 
     CharacterTemplate* esv::Character::CreateCacheTemplate()
     {
+#if !defined(_MSC_VER)
+        // The template cache, or the system that records the switch, can be
+        // missing on a game whose layouts did not pass their checks
+        // (Mac/Binding/Layouts.h): the template stays as it is.
+        if (!GetStaticSymbols().esv__CacheTemplateManager
+            || !gExtender->GetServer().GetEntityHelpers().GetSystem<esv::templates::ChangeSystem>()) {
+            ERR("Cannot cache the template of %s: the template cache is unavailable on this game", Template ? Template->Id.GetString() : "(none)");
+            return Template;
+        }
+#endif
         auto oldTemplate = Template;
         auto templateMgr = *GetStaticSymbols().esv__CacheTemplateManager;
         auto newTmpl = static_cast<CharacterTemplate*>(TryToCacheTemplate(Template));
@@ -292,6 +311,16 @@ namespace bg3se
 
     ItemTemplate* esv::Item::CreateCacheTemplate()
     {
+#if !defined(_MSC_VER)
+        // The template cache, or the system that records the switch, can be
+        // missing on a game whose layouts did not pass their checks
+        // (Mac/Binding/Layouts.h): the template stays as it is.
+        if (!GetStaticSymbols().esv__CacheTemplateManager
+            || !gExtender->GetServer().GetEntityHelpers().GetSystem<esv::templates::ChangeSystem>()) {
+            ERR("Cannot cache the template of %s: the template cache is unavailable on this game", Template ? Template->Id.GetString() : "(none)");
+            return Template;
+        }
+#endif
         auto oldTemplate = Template;
         auto templateMgr = *GetStaticSymbols().esv__CacheTemplateManager;
         auto newTmpl = static_cast<ItemTemplate*>(TryToCacheTemplate(Template));
@@ -1005,6 +1034,13 @@ bool AppliedMaterial::SetVector4(FixedString const& paramName, glm::vec4 value)
 bool AppliedMaterial::SetTexture2D(FixedString const& param, FixedString const& texture)
 {
     auto setter = GetStaticSymbols().ls__AppliedMaterial__TryOverrideTexture2DParameter;
+#if !defined(_MSC_VER)
+    // An entry the engine table did not resolve on this game.
+    if (!setter) {
+        ERR("Cannot set texture parameter '%s': the game function is unavailable on this game", param.GetString());
+        return false;
+    }
+#endif
     return setter(this, param, texture);
 }
 
@@ -1020,6 +1056,13 @@ bool AppliedMaterial::SetVirtualTexture(FixedString const& paramName, FixedStrin
         for (auto& param : VirtualTextureParams) {
             if (param.ParameterName == paramName) {
                 auto loader = GetStaticSymbols().ls__AppliedMaterial__LoadVirtualTexture;
+#if !defined(_MSC_VER)
+                // An entry the engine table did not resolve on this game.
+                if (!loader) {
+                    ERR("Cannot load virtual texture '%s': the game function is unavailable on this game", texture.GetString());
+                    return false;
+                }
+#endif
                 auto vt = loader(this, texture);
                 if (vt == nullptr) {
                     ERR("Failed to load virtual texture '%s' when binding material parameter '%s'", texture.GetString(), paramName.GetString());

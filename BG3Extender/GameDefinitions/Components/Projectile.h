@@ -110,7 +110,10 @@ struct InitializationComponent : public BaseProxyComponent
 {
     DEFINE_COMPONENT(ServerProjectileInitialization, "esv::projectile::InitializationComponent")
 
+#if defined(_MSC_VER)
+    // The macOS game's object has no such word: the data begins the object.
     [[bg3::hidden]] void* field_0;
+#endif
     InitializationData Data;
 };
 
@@ -120,8 +123,18 @@ struct Projectile : public BaseProxyComponent
     DEFINE_COMPONENT(ServerProjectile, "esv::Projectile")
 
     [[bg3::hidden]] void* VMT;
+#if defined(_MSC_VER)
+    // The macOS game's object has neither: the entity follows the vtable pointer.
     uint32_t field_8;
     uint32_t field_C;
+#else
+    // A script written for Windows finds both names here too: they read as
+    // 0 and take no value.
+    //# P_GETTER_SETTER(field_8, GetMissingField, SetMissingField)
+    //# P_GETTER_SETTER(field_C, GetMissingField, SetMissingField)
+    uint32_t GetMissingField() const { return 0; }
+    void SetMissingField(uint32_t) {}
+#endif
     EntityHandle Entity;
     EntityHandle Caster;
     EntityHandle Source;

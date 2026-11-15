@@ -152,7 +152,10 @@ struct EoCClient : public ProtectedGameObject<EoCClient>
 {
     void* VMT_InputEventListener;
     void* VMT_NetEventListener;
+#if defined(_MSC_VER)
+    // The macOS game's object has no such word: its four vtable pointers follow one another.
     void* field_10;
+#endif
     void* VMT_DLCEventListener;
     void* VMT_MessageBoxOwner;
     UnknownSignal ComponentCallbacks;

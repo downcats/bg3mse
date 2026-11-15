@@ -73,6 +73,7 @@ BEGIN_NS(ecl)
 
 struct BaseController : public ProtectedGameObject<BaseController>
 {
+#if defined(_MSC_VER)
 	virtual ~BaseController() = 0;
 	virtual char const* GetName() = 0;
 	virtual int GetPriority() = 0;
@@ -82,6 +83,22 @@ struct BaseController : public ProtectedGameObject<BaseController>
 	virtual void Resume() = 0;
 	virtual void Reset() = 0;
 	virtual void ResetState(bool forceSync) = 0;
+#else
+	// The macOS game's ecl::BaseController: the priority also says whether
+	// the controller is active, a tick follows the update, and the client's
+	// pause comes last (Mac/Layout/DeclaredVirtuals.cpp).
+	virtual ~BaseController() = 0;
+	virtual char const* GetName() const = 0;
+	virtual int GetPriority(bool& active) const = 0;
+	virtual int GetTypeId() const = 0;
+	virtual void Update(GameTime const&) = 0;
+	virtual void Tick(Guid const&, float) = 0;
+	virtual bool Pause() = 0;
+	virtual void Resume() = 0;
+	virtual void Reset() = 0;
+	virtual void ResetState(bool forceSync) = 0;
+	virtual void OnGamePaused(bool paused) = 0;
+#endif
 
 	ecs::EntityRef Owner;
 };

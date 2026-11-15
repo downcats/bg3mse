@@ -73,6 +73,12 @@ struct CompanionDefinitionComponent : public BaseComponent
     [[bg3::legacy(field_110)]] Guid Voice;
     [[bg3::legacy(field_120)]] Guid VOLines;
     uint8_t field_130;
+#if !defined(_MSC_VER)
+    // The macOS game's component keeps the two members below after the whole
+    // of the definition that ends with field_130, at 0x138 and 0x13c, not in
+    // the padding that definition ends with.
+    [[bg3::hidden]] uint32_t Padding_134;
+#endif
     [[bg3::legacy(field_138)]] uint32_t IconVersion;
     [[bg3::legacy(field_13C)]] uint8_t HasIcon;
 };

@@ -221,7 +221,16 @@ struct StatusInvisible : public StatusBoost
 {
     static constexpr auto Type = StatusType::INVISIBLE;
 
+#if defined(_MSC_VER)
     glm::vec3 InvisiblePosition;
+#else
+    // The macOS game's status has no members of its own: it is allocated
+    // with the size of StatusBoost. A script written for Windows finds the
+    // name here too: it reads as the zero vector and takes no value.
+    //# P_STAND_IN(InvisiblePosition, GetMissingPosition, SetMissingPosition)
+    glm::vec3 GetMissingPosition() const { return glm::vec3(0.0f); }
+    void SetMissingPosition(glm::vec3 const&) {}
+#endif
 };
 
 struct StatusKnockedDown : public Status

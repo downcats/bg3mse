@@ -21,6 +21,9 @@
 #include <NsGui/VisualTreeHelper.h>
 #include <NsGui/UserControl.h>
 #include <NsGui/Uri.h>
+#if !defined(_MSC_VER)
+#include <malloc/malloc.h>
+#endif
 
 BEGIN_BARE_NS(Noesis)
 
@@ -58,7 +61,13 @@ inline void* Realloc(void* ptr, SizeT size)
 {
     if (ptr != nullptr) {
         auto newMem = Alloc(size);
+#if defined(_MSC_VER)
         memcpy(newMem, ptr, size);
+#else
+        // The game allocates with malloc (Mac/Layout/GameNoesis.h), and its
+        // own reallocation copies no more than the old block holds.
+        memcpy(newMem, ptr, std::min<size_t>(size, malloc_size(ptr)));
+#endif
         Dealloc(ptr);
         return newMem;
     } else {
@@ -389,7 +398,11 @@ struct UIInitialSubstate : public Noesis::BaseComponent
 struct UIStateEvent : public Noesis::BaseComponent
 {
     String Name;
+#if defined(_MSC_VER)
     String HandlesEvent;
+#else
+    bool HandlesEvent;
+#endif
     BaseObservableCollection* Actions;
 };
 
@@ -426,8 +439,13 @@ struct UIState : public Noesis::BaseComponent
     String HideStatesBelow;
     String IsModal;
     String IsModalCameraControlAllowed;
+#if defined(_MSC_VER)
     String ForceSplitscreen;
     String ForceVisible;
+#else
+    String ForceVisible;
+    String ForceSplitscreen;
+#endif
     String DisableSoundLayersAbove;
     String TutorialLayer;
     String ModType;
@@ -493,10 +511,24 @@ struct UIWidget : public UserControl
 struct UIStateInstance : public ProtectedGameObject<UIStateInstance>
 {
     Array<UIWidget*> Widgets;
+#if defined(_MSC_VER)
     Array<UIWidgetMetadata*> WidgetMetadata;
+#endif
     Array<Array<UIStateInstance*>*> States;
     UIState* State;
     PlayerId PlayerID;
+#if !defined(_MSC_VER)
+    // The macOS game's state keeps no metadata of its widgets, and has the
+    // lock of its widgets here (Mac/Layout/GameUi.h). A script written for
+    // Windows finds WidgetMetadata here too, as an array that stays empty.
+    [[bg3::hidden]] CRITICAL_SECTION WidgetsLock;
+    Array<UIWidgetMetadata*>* GetMissingWidgetMetadata() const
+    {
+        static Array<UIWidgetMetadata*> none;
+        return &none;
+    }
+    void SetMissingWidgetMetadata(Array<UIWidgetMetadata*>*) {}
+#endif
     uint8_t Flags;
     uint8_t Flags2;
     uint8_t Layout;
@@ -510,6 +542,10 @@ struct UIStateInstance : public ProtectedGameObject<UIStateInstance>
     String TutorialLayer;
     Guid StateGuid;
     Guid field_B8;
+#if !defined(_MSC_VER)
+    // The macOS game's state has two more words here.
+    [[bg3::hidden]] uint64_t field_D0[2];
+#endif
     UIElementCollection* StateWidgets;
 };
 
@@ -532,6 +568,12 @@ struct UIStateMachine : public Noesis::BaseComponent
     HashMap<Guid, uint64_t> field_B0_MHM_Guid_pStateStack; // StateStack*
     HashMap<Guid, UIStateInstance*> field_F0_MHM_Guid_pState;
     HashMap<Guid, UIStateInstance*> field_130_MHM_Guid_pState;
+#if !defined(_MSC_VER)
+    // The macOS game's component has an array and two sets of GUIDs here.
+    [[bg3::hidden]] Array<void*> field_170_Mac;
+    [[bg3::hidden]] HashSet<Guid> field_180_Mac;
+    [[bg3::hidden]] HashSet<Guid> field_1B0_Mac;
+#endif
     HashSet<UIStateInstance*> field_170_MHS_pState;
     HashSet<void*> field_1A0_pStateStack; // StateStack*
     HashSet<UIStateInstance*> field_1D0_pState;
@@ -554,7 +596,15 @@ struct UIStateMachine : public Noesis::BaseComponent
     __int64 field_3C8;
     HashSet<PlayerId> field_3D0_MHS_short;
     PlayerId PlayerID;
+#if defined(_MSC_VER)
     CRITICAL_SECTION CriticalSection;
+#else
+    // The macOS game's component has its deferred state events (0x28 bytes
+    // each) and four critical sections here, and three queues after them,
+    // which are not declared.
+    [[bg3::hidden]] Array<void*> DeferredStateEvents;
+    [[bg3::hidden]] CRITICAL_SECTION CriticalSections[4];
+#endif
 
     struct EventArgs
     {
@@ -1096,7 +1146,13 @@ struct TwitchOverlayManager : public ProtectedGameObject<TwitchOverlayManager>
     STDString TwitchExtToken;
     STDString TwitchExtSecret;
     CRITICAL_SECTION CS_;
+#if defined(_MSC_VER)
     int net__defaulthttprequestmanager120;
+#else
+    // The macOS game has the request manager's pointer here, at the next
+    // 8-byte boundary.
+    void* net__defaulthttprequestmanager120;
+#endif
     EntityHandle qword128;
     EntityHandle HttpRequest;
 };
@@ -1119,15 +1175,26 @@ struct GameUI : public ProtectedGameObject<GameUI>
     void* VMT;
     void* InputEventListenerVMT;
     void* PlayerEventListenerVMT;
+#if defined(_MSC_VER)
     uint64_t field_18;
+#endif
     void* GameStateEventListenerVMT;
+#if defined(_MSC_VER)
     uint64_t ls__eventlistenerbase28;
+#endif
+    // The macOS game has the five vtable pointers one after another.
     void* GameEventManagerListenerVMT;
     UnknownSignal SplitScreenChangedSignal;
     GameUIParams GameUIParams;
     NoesisUIManager NoesisUIManager;
     BrushManager BrushManager;
+#if defined(_MSC_VER)
     alignas(64) uint16_t field_380;
+#else
+    // The macOS game's command processor (these two members) is on a
+    // 128-byte line, as its queue is.
+    alignas(128) uint16_t field_380;
+#endif
     MPMCQueueBounded<void*> CommandQueue;
     ModManager ModManager;
     __int64 field_3B0;

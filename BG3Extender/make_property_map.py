@@ -286,8 +286,28 @@ class DefinitionLoader:
 
     def load_file(self, path):
         with open(path, 'r') as header:
+            # The definitions are compiled with _MSC_VER on Windows and without
+            # it elsewhere: what a header keeps for the other compiler alone is
+            # no part of them.
+            # One entry per open #if: whether its branch is compiled, or None
+            # for a condition that is not about _MSC_VER.
+            msvc = os.name == 'nt'
+            guards = []
             for line in header.readlines():
                 line = line.strip()
+                if line.startswith('#'):
+                    if re.match(r'#\s*if\s+defined\(_MSC_VER\)\s*$', line):
+                        guards.append(msvc)
+                    elif re.match(r'#\s*if\s+!defined\(_MSC_VER\)\s*$', line):
+                        guards.append(not msvc)
+                    elif re.match(r'#\s*if', line):
+                        guards.append(None)
+                    elif re.match(r'#\s*else', line) and guards and guards[-1] is not None:
+                        guards[-1] = not guards[-1]
+                    elif re.match(r'#\s*endif', line) and guards:
+                        guards.pop()
+                if False in guards:
+                    continue
                 loader.parse_line(line)
         if len(self.ns_stack) > 0 or len(self.struct_stack) > 0 or len(self.next_attributes) > 0 or self.cur_struct is not None:
             raise Exception("Partially parsed namespace or struct after EOF in file: " + path)

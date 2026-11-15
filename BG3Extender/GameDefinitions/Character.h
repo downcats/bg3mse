@@ -100,9 +100,25 @@ struct Character : public BaseProxyComponent
     void* ShapeShiftingVariableManager;
     void* CharacterMover;
     PlayerData* PlayerData;
+#if defined(_MSC_VER)
     EntityHandle Inventory;
     EntityHandle OwnerCharacter;
     EntityHandle FollowCharacter;
+#else
+    // The macOS game keeps the owner first and the followed character after
+    // it (Mac/Layout/GameCharacter.h); what the third handle is, its code
+    // does not show.
+    EntityHandle OwnerCharacter;
+    EntityHandle FollowCharacter;
+    EntityHandle field_168;
+
+    // Nor does it have the inventory handle: the game finds a character's
+    // main inventory in its inventory owner component. A script written for
+    // Windows finds Inventory here too, read from there (the null handle
+    // when there is none), and it takes no value.
+    EntityHandle GetInventory() const;
+    void SetMissingInventory(EntityHandle) {}
+#endif
     EntityHandle EnemyCharacter;
     int Dialog;
     FixedString CustomTradeTreasure;

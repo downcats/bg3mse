@@ -39,6 +39,11 @@ struct DeathData
 
 struct DeathRequestData : public DeathData
 {
+#if !defined(_MSC_VER)
+    // The macOS game's request has its own bytes after the whole of
+    // DeathData, at 0x78, not in the padding that struct ends with.
+    [[bg3::hidden]] uint32_t Padding_74;
+#endif
     uint8_t field_78;
     uint8_t field_79;
     bool SkipDowned;

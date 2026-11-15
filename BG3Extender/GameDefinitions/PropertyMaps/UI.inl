@@ -247,7 +247,11 @@ END_CLS()
 
 BEGIN_CLS(ui::UIStateInstance)
 P(Widgets)
+#if defined(_MSC_VER)
 P(WidgetMetadata)
+#else
+P_STAND_IN(WidgetMetadata, GetMissingWidgetMetadata, SetMissingWidgetMetadata)
+#endif
 P(States)
 P(State)
 P(PlayerID)

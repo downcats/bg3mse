@@ -44,7 +44,12 @@ struct [[bg3::hidden]] DragDropManager : public ProtectedGameObject<DragDropMana
     UnknownSignal OnStartDragActionPassive;
     UnknownSignal OnStopDrag;
     uint8_t field_90[0x40]; // MPMCQueueBounded maybe?
+#if defined(_MSC_VER)
     LegacyRefMap<uint16_t, PlayerDragData> PlayerData;
+#else
+    // The macOS game hashes a player's id sign-extended (Mac/Layout/GameGlobals.h).
+    LegacyRefMap<int16_t, PlayerDragData> PlayerData;
+#endif
     ecs::EntityWorld* EntityWorld;
 };
 

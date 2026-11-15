@@ -22,11 +22,20 @@ struct Property : public ProtectedGameObject<Property>
     virtual void Clone(Property const& other) = 0;
     virtual bool Visit(ObjectVisitor* visitor) = 0;
     virtual PropertyType GetPropertyType() = 0;
+#if defined(_MSC_VER)
     virtual void SetInputValueString(FixedString const&) = 0;
     virtual void SetInputValueVec4(glm::vec4 const&) = 0;
     virtual void SetInputValueVec3(glm::vec3 const&) = 0;
     virtual void SetInputValueVec2(glm::vec2 const&) = 0;
     virtual void SetInputValueFloat(float) = 0;
+#else
+    // The macOS game keeps the overloads in the order they are written.
+    virtual void SetInputValueFloat(float) = 0;
+    virtual void SetInputValueVec2(glm::vec2 const&) = 0;
+    virtual void SetInputValueVec3(glm::vec3 const&) = 0;
+    virtual void SetInputValueVec4(glm::vec4 const&) = 0;
+    virtual void SetInputValueString(FixedString const&) = 0;
+#endif
 
     FixedString FullName;
     FixedString AttributeName;
@@ -136,7 +145,11 @@ struct StringProperty : public Property
 struct Vector3Property : public Property
 {
     Vector3 Value;
+#if defined(_MSC_VER)
+    // The macOS game's property ends with the value: it begins in the last
+    // bytes of Property and fills the object to 64 bytes.
     [[bg3::hidden]] __int32 field_44;
+#endif
 };
 
 // Types: 0, 1, 2, 3 is null
@@ -643,7 +656,14 @@ struct TimelineActorPropertiesReflectionComponent : public TLBaseComponent
         };
         virtual ~Parameter() = 0;
         virtual bool readData(void* dataReader) = 0;
+#if defined(_MSC_VER)
         virtual Range& getRange(Range& r) = 0;
+#else
+        // The macOS game's function takes nothing and returns the two
+        // pointers in registers; nothing is written through an argument.
+        virtual Range getRangeByValue() = 0;
+        inline Range& getRange(Range& r) { r = getRangeByValue(); return r; }
+#endif
 
         [[bg3::hidden]] void* vtable;
         FixedString ParameterName;
@@ -798,7 +818,14 @@ struct TLMaterialComponent : public TLBaseComponent
         };
         virtual ~Parameter() = 0;
         virtual bool parseXML(void*) = 0;
+#if defined(_MSC_VER)
         virtual Range& getRange(Range&) = 0;
+#else
+        // The macOS game's function takes nothing and returns the two
+        // pointers in registers; nothing is written through an argument.
+        virtual Range getRangeByValue() = 0;
+        inline Range& getRange(Range& r) { r = getRangeByValue(); return r; }
+#endif
         FixedString MaterialParameterName;
         __int32 field_c;
         __int64 field_10;
@@ -876,6 +903,10 @@ struct TLShotComponent : public TLBaseComponent
     Guid CompanionCameraA;
     Guid CompanionCameraB;
     Guid CompanionCameraC;
+#if !defined(_MSC_VER)
+    // The macOS game's shot has a byte here, and the map after it at 0xf8.
+    [[bg3::hidden]] bool field_f0;
+#endif
     HashMap<Guid, Array<uint32_t>> VTPrefetchData;
 };
 

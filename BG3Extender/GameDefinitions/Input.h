@@ -152,6 +152,7 @@ struct HoldRepeatEventDesc
 
 struct [[bg3::hidden]] InputEventListener
 {
+#if defined(_MSC_VER)
 	virtual ~InputEventListener() = 0;
 	virtual int GetInputListenerPriority() = 0;
 	virtual uint64_t GetInputListenerFilter() = 0;
@@ -162,6 +163,22 @@ struct [[bg3::hidden]] InputEventListener
 	virtual void OnInputModifierChangedEvent(bool, bool, bool, bool) = 0;
 	virtual uint16_t* OnInputEvent(uint16_t* eventRetVal, InputEventText* inputEvent) = 0;
 	virtual uint16_t* OnUnlinkedInput(uint16_t* eventRetVal, InputDeviceId inputDeviceId) = 0;
+#else
+	// The macOS game's: IsModal takes the player, a check of the camera
+	// controls follows InTextInput, and the results of the input events come
+	// back in a register (Mac/Layout/DeclaredVirtuals.cpp).
+	virtual ~InputEventListener() = 0;
+	virtual int GetInputListenerPriority() const = 0;
+	virtual uint64_t GetInputListenerFilter() const = 0;
+	virtual const char* GetInputListenerName() const = 0;
+	virtual bool IsModal(int playerIndex) const = 0;
+	virtual bool InTextInput(int playerIndex) const = 0;
+	virtual bool IsModalCameraControlAllowed(Array<FireEventDesc> const& events) const = 0;
+	virtual uint16_t OnInputEvent(InputEvent const& inputEvent) = 0;
+	virtual void OnInputModifierChangedEvent(bool, bool, bool, bool) = 0;
+	virtual uint16_t OnInputEvent(InputEventText const& inputEvent) = 0;
+	virtual uint16_t OnUnlinkedInput(uint32_t, InputDeviceId inputDeviceId) = 0;
+#endif
 };
 
 struct [[bg3::hidden]] InputListenerGroup
@@ -225,13 +242,53 @@ struct HoldRepeatEvents
 	Array<HoldRepeatEventDesc> HoldRepeatEvents;
 };
 
+#if !defined(_MSC_VER)
+// The macOS game keys the repeats by a one-byte player index and the input
+// states by a device's 16-bit id, and hashes both sign-extended
+// (Mac/Layout/GameGlobals.h). Each key keeps the game's bytes and hash, and
+// is to Lua the unsigned integer the Windows key is.
+enum class SignHashedPlayerIndex : uint8_t {};
+enum class SignHashedDeviceId : InputDeviceId {};
+
+inline constexpr uint64_t Hash(SignHashedPlayerIndex v)
+{
+	return (uint64_t)(int64_t)(int8_t)v;
+}
+
+inline constexpr uint64_t Hash(SignHashedDeviceId v)
+{
+	return (uint64_t)(int64_t)(int16_t)v;
+}
+
+END_NS()
+
+BEGIN_SE()
+MARK_INTEGRAL_ALIAS(input::SignHashedPlayerIndex)
+MARK_INTEGRAL_ALIAS(input::SignHashedDeviceId)
+
+// The type information names the repeats' key as the 32-bit integer Windows
+// declares.
+inline StaticTypeInformation& GetStaticTypeInfo(Overload<input::SignHashedPlayerIndex>)
+{
+	return GetStaticTypeInfo(Overload<uint32_t>{});
+}
+END_SE()
+
+BEGIN_NS(input)
+
+#endif
 struct InputManager : public ProtectedGameObject<InputManager>
 {
 	[[bg3::hidden]] CRITICAL_SECTION CS;
 	[[bg3::hidden]] CRITICAL_SECTION CS2;
 	[[bg3::hidden]] UnknownSignal OnInputEvent;
+#if defined(_MSC_VER)
 	HashMap<uint32_t, HoldRepeatEvents> HoldRepeatEvents;
 	HashMap<InputDeviceId, InputValueSet*> InputStates;
+#else
+	HashMap<SignHashedPlayerIndex, HoldRepeatEvents> HoldRepeatEvents;
+	HashMap<SignHashedDeviceId, InputValueSet*> InputStates;
+#endif
 	LegacyRefMap<int32_t, InputEventDesc> InputDefinitions;
 	InputScheme InputScheme;
 	InputModifier PressedModifiers;
@@ -255,6 +312,9 @@ struct InputManager : public ProtectedGameObject<InputManager>
 	std::array<glm::vec4, NumPlayers> PlayerColors;
 	std::array<InputDevice, 12> PerDeviceData;
 	[[bg3::hidden]] void* KeyboardLayoutTranslator;
+#if !defined(_MSC_VER)
+	[[bg3::hidden]] void* field_5F0;
+#endif
 };
 
 END_NS()

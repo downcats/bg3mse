@@ -2,6 +2,10 @@
 
 #include <CoreLib/Base/Base.h>
 #include <CoreLib/Utils.h>
+#if !defined(_MSC_VER)
+// In namespace bg3se, std::variant is the Mac game's variant.
+#include <Mac/Layout/StdVariant.h>
+#endif
 // Needed for enum definitions
 #include <NsGui/GridLength.h>
 #include <GameDefinitions/Base/TypeId.h>
@@ -10,8 +14,14 @@
 
 // The game has a jank SEH handler that silently swallows STATUS_CPP_EH_EXCEPTION without passing it
 // to the top-level handler, so we need to have additional checks at the common SE entry points
+#if defined(_MSC_VER)
 #define BEGIN_GUARDED() __try {
 #define END_GUARDED() } __except (HandleGuardedException(GetExceptionCode(), GetExceptionInformation())) {}
+#else
+// No SEH: the block is the body of a callable run by the platform's guarded call.
+#define BEGIN_GUARDED() ::bg3se::mac::GuardedBlock([&]() {
+#define END_GUARDED() });
+#endif
 
 BEGIN_SE()
 LONG HandleGuardedException(DWORD code, EXCEPTION_POINTERS* info);

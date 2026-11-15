@@ -168,12 +168,22 @@ struct [[bg3::hidden]] PhysicsSceneBase : ProtectedGameObject<PhysicsSceneBase>
     virtual bool SweepBoxAll(glm::vec3 const& extents, glm::vec3 const& source, glm::vec3 const& destination, PhysicsHitAll& hits, PhysicsType physicsType, PhysicsGroupFlags includePhysicsGroup, PhysicsGroupFlags excludePhysicsGroup, int context, int physicsObjectIndex, int excludePhysicsObjectIndex) const = 0;
     virtual bool SweepCylinderAll(glm::vec3 const&, glm::vec3 const&, glm::vec3 const&, PhysicsHitAll& hits, PhysicsType physicsType, PhysicsGroupFlags includePhysicsGroup, PhysicsGroupFlags excludePhysicsGroup, int context, int physicsObjectIndex, int excludePhysicsObjectIndex) const = 0;
     virtual bool SweepShapeAll(PhysicsShape const* shape, Transform const& transform, PhysicsHitAll& hits, PhysicsType physicsType, PhysicsGroupFlags includePhysicsGroup, PhysicsGroupFlags excludePhysicsGroup) const = 0;
+#if defined(_MSC_VER)
     virtual bool TestBoxFunc(glm::vec3 const& position, glm::vec3 const& extents, PhysicsHitFunction const&) const = 0;
     virtual bool TestBox(glm::vec3 const& position, glm::vec3 const& extents, PhysicsHitAll&, PhysicsType physicsType, PhysicsGroupFlags includePhysicsGroup, PhysicsGroupFlags excludePhysicsGroup) const = 0;
     virtual bool TestShapeFunc(Transform const& transform, PhysicsShape const* shape, PhysicsHitFunction const&) const = 0;
     virtual bool TestShape(Transform const& transform, PhysicsShape const* shape, PhysicsHitAll&, PhysicsType physicsType, PhysicsGroupFlags includePhysicsGroup, PhysicsGroupFlags excludePhysicsGroup) const = 0;
     virtual bool TestSphereFunc(glm::vec3 const& position, float radius, PhysicsHitFunction const&) const = 0;
     virtual bool TestSphere(glm::vec3 const& position, float radius, PhysicsHitAll&, PhysicsType physicsType, PhysicsGroupFlags includePhysicsGroup, PhysicsGroupFlags excludePhysicsGroup) const = 0;
+#else
+    // The macOS game has each pair in the order its source declares it.
+    virtual bool TestBox(glm::vec3 const& position, glm::vec3 const& extents, PhysicsHitAll&, PhysicsType physicsType, PhysicsGroupFlags includePhysicsGroup, PhysicsGroupFlags excludePhysicsGroup) const = 0;
+    virtual bool TestBoxFunc(glm::vec3 const& position, glm::vec3 const& extents, PhysicsHitFunction const&) const = 0;
+    virtual bool TestShape(Transform const& transform, PhysicsShape const* shape, PhysicsHitAll&, PhysicsType physicsType, PhysicsGroupFlags includePhysicsGroup, PhysicsGroupFlags excludePhysicsGroup) const = 0;
+    virtual bool TestShapeFunc(Transform const& transform, PhysicsShape const* shape, PhysicsHitFunction const&) const = 0;
+    virtual bool TestSphere(glm::vec3 const& position, float radius, PhysicsHitAll&, PhysicsType physicsType, PhysicsGroupFlags includePhysicsGroup, PhysicsGroupFlags excludePhysicsGroup) const = 0;
+    virtual bool TestSphereFunc(glm::vec3 const& position, float radius, PhysicsHitFunction const&) const = 0;
+#endif
     virtual void ProfileStepOut() = 0;
     virtual void ProfileStepInto(int) = 0;
     virtual void ProfileDump(char*, int) = 0;
@@ -184,8 +194,11 @@ struct [[bg3::hidden]] PhysicsSceneBase : ProtectedGameObject<PhysicsSceneBase>
     virtual uint32_t GetSceneType() const = 0;
     virtual void AddPhysicsFileToScene(Path const&, FixedString const&, Transform const&) = 0;
     virtual void RemovePhysicsFileFromScene(FixedString const&) = 0;
+#if defined(_MSC_VER)
+    // The macOS game's class has neither of these.
     virtual void RefreshSpringObjectsForResource(FixedString const&) = 0;
     virtual void RemoveRagdollsWithTemplate(FixedString const&) = 0;
+#endif
 
     bool IsSimulating;
     CRITICAL_SECTION CriticalSection;

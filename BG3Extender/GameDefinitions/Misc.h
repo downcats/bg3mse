@@ -47,6 +47,10 @@ namespace bg3se
             char field_40;
             TranslatedString field_44;
             void* UpdateProc;
+#if !defined(_MSC_VER)
+            // The macOS game keeps a second word after the function's address.
+            uint64_t field_60;
+#endif
         };
 
         struct ControlSwitch
@@ -171,8 +175,14 @@ namespace bg3se
         uint8_t field_106;
         uint8_t field_107;
 
+#if defined(_MSC_VER)
         bool TwitchSomeFlag_108;
         bool TwitchEnableOverlay;
+#else
+        // The macOS game has the overlay's switch a byte earlier.
+        bool TwitchEnableOverlay;
+        bool TwitchSomeFlag_108;
+#endif
         uint8_t field_108;
         bool TwitchUseLarianAuth;
         STDString EBSUrl;
@@ -191,7 +201,13 @@ namespace bg3se
         int saveSystemECBCheckNumberOfFramesToWait;
         uint8_t field_19C;
         float field_1A0;
+#if defined(_MSC_VER)
         float field_1A4;
+#else
+        // ls::GlobalSwitches ends with field_1A0. Outside MSVC the members
+        // of eoc::EoCGlobalSwitches begin right after it, where MSVC pads
+        // the base class to its alignment.
+#endif
 
         bool UseLevelCache;
         bool LoadAllEffectPools;
@@ -354,7 +370,12 @@ namespace bg3se
 
         std::array<CameraGlobalSwitches, 4> CameraSwitches;
         ControlSwitch ControlSwitches;
+#if defined(_MSC_VER)
         SomeSetting SomeSettings[72];
+#else
+        // In the macOS game these are aligned to 16 bytes.
+        alignas(16) SomeSetting SomeSettings[72];
+#endif
 
         uint8_t AutoRemoveHotbarSpells;
         uint8_t field_12F1;

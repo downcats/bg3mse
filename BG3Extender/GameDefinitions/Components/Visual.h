@@ -572,7 +572,10 @@ struct [[bg3::component]] Construction : public ProtectedGameObject<Construction
 {
     DEFINE_PROXY_COMPONENT(Construction, "ls::Construction")
 
+#if defined(_MSC_VER)
+    // The macOS game's object has no such word: the tiles begin the object.
     [[bg3::hidden]] void* field_0;
+#endif
     // Editor only
     // [[bg3::hidden]] UnknownSignal field_8;
     Array<EntityHandle> Tiles;

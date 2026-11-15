@@ -19,7 +19,12 @@ struct Bitstream : ProtectedGameObject<Bitstream>
 
 struct BitstreamSerializer : ProtectedGameObject<BitstreamSerializer>
 {
+#if defined(_MSC_VER)
     virtual void Unknown() = 0;
+#else
+    // The macOS game's serializer begins with its two destructor slots.
+    virtual ~BitstreamSerializer() = 0;
+#endif
     virtual void WriteBytes(void const* Buf, uint64_t Size) = 0;
     virtual void ReadBytes(void* Buf, uint64_t Size) = 0;
 
@@ -164,7 +169,13 @@ struct AbstractPeerBase : ProtectedGameObject<AbstractPeerBase>
     virtual void fun_60() = 0;
     virtual void fun_68() = 0;
     virtual void fun_70() = 0;
+#if defined(_MSC_VER)
     virtual void Shutdown() = 0;
+#else
+    // The macOS game has the two destructor slots here, and Destroy() after them.
+    virtual ~AbstractPeerBase() = 0;
+    virtual void Destroy() = 0;
+#endif
     virtual void Init(uint16_t port, uint16_t port2, uint32_t socketType, void*, void*) = 0;
     virtual void Disconnect(uint32_t TPeerId) = 0;
     virtual void CreateConnection(STDString*) = 0;
@@ -172,8 +183,14 @@ struct AbstractPeerBase : ProtectedGameObject<AbstractPeerBase>
     virtual void RequestDisconnect(TPeerId peerId, int delay, int delayInfo) = 0;
     virtual void PreUpdate(GameTime const&) = 0;
     virtual void PostUpdate(GameTime const&) = 0;
+#if defined(_MSC_VER)
     virtual void SendMessageMultiPeerMoveIds(Array<PeerId>& recipients, Message* message, TPeerId excludePeerId) = 0;
     virtual void SendMessageSinglePeer(TPeerId peerId, Message* message) = 0;
+#else
+    // The macOS game has the two in the order its source declares them.
+    virtual void SendMessageSinglePeer(TPeerId peerId, Message* message) = 0;
+    virtual void SendMessageMultiPeerMoveIds(Array<PeerId>& recipients, Message* message, TPeerId excludePeerId) = 0;
+#endif
     virtual ProtocolResult ProcessMsg(void* unknown, void* context, Message* message) = 0;
     virtual bool ConnectToNatPunchServer(void*, STDString*) = 0;
     virtual bool fun_110() = 0;
@@ -305,7 +322,10 @@ struct GameServer : public Host
 {
     void* VMT3;
     void* VMT_EventListenerBase;
+#if defined(_MSC_VER)
+    // The macOS game's server has three vtable pointers after the peer, not four.
     void* VMT4;
+#endif
     ecs::EntityReplicationAuthority Replication;
     void* LobbyManager;
     ecs::EntityWorld* EntityWorld;

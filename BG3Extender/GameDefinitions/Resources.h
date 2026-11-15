@@ -318,7 +318,13 @@ struct [[bg3::hidden]] ResourcePackage
 
 struct [[bg3::hidden]] ResourceManager
 {
+#if defined(_MSC_VER)
     void* VMT;
+#else
+    // The macOS game's resource manager has no virtual functions: it starts
+    // with a reader-writer lock, which is 16 bytes in that game.
+    SRWLOCK Lock;
+#endif
     LegacyMap<FixedString, resource::Resource*> PreviewResources;
     std::array<ResourceBank*, 2> ResourceBanks;
     void* VisualFactory;
@@ -353,8 +359,16 @@ BEGIN_NS(resource)
 struct Resource : public ProtectedGameObject<Resource>
 {
     virtual ~Resource() = 0;
+#if defined(_MSC_VER)
     virtual void* GetLogInfo(void*) = 0;
     virtual STDString* ToLogString(STDString&) = 0;
+#else
+    // The macOS game returns both in memory its caller provides
+    // (Mac/Layout/DeclaredVirtuals.cpp); what the log information holds is
+    // not declared.
+    virtual struct LogInfo GetLogInfo() const = 0;
+    virtual STDString ToLogString() const = 0;
+#endif
     virtual void SetUUID(FixedString const&) = 0;
     virtual void VMT18(FixedString const&) = 0;
     virtual void ForceUnload(ResourceManager* mgr) = 0;
@@ -856,6 +870,7 @@ struct PhysicsResource : public LoadableResource
 
         struct PhysicsBox : public PhysicsObject
         {
+#if defined(_MSC_VER)
             [[bg3::hidden]] void* VMT;
             bool Kinematic;
             [[bg3::hidden]] __int8 field_9;
@@ -865,10 +880,21 @@ struct PhysicsResource : public LoadableResource
             [[bg3::hidden]] __int32 field_14;
             glm::fvec3 Extends;
             [[bg3::hidden]] __int32 field_24;
+#else
+            // The macOS game's: the members follow PhysicsObject's vtable
+            // pointer and the extents the name (Mac/Layout/GameResourceManager.h).
+            bool Kinematic;
+            [[bg3::hidden]] __int8 field_9;
+            [[bg3::hidden]] __int16 field_a;
+            float Mass;
+            FixedString UUID;
+            glm::fvec3 Extends;
+#endif
         };
 
         struct PhysicsCapsule : public PhysicsObject
         {
+#if defined(_MSC_VER)
             [[bg3::hidden]] void* VMT;
             bool Kinematic;
             [[bg3::hidden]] __int8 field_9;
@@ -878,6 +904,17 @@ struct PhysicsResource : public LoadableResource
             [[bg3::hidden]] __int32 field_14;
             float Height;
             float Radius;
+#else
+            // The macOS game's: the members follow PhysicsObject's vtable
+            // pointer, the height and radius the name (Mac/Layout/GameResourceManager.h).
+            bool Kinematic;
+            [[bg3::hidden]] __int8 field_9;
+            [[bg3::hidden]] __int16 field_a;
+            float Mass;
+            FixedString UUID;
+            float Height;
+            float Radius;
+#endif
         };
 
         FixedString UUID;
@@ -1005,7 +1042,11 @@ struct TerrainBrushResource : public LoadableResource
     bool UseHeightGradient_maybe;
     bool IsBlackBrush;
     MaterialType MaterialType;
+#if defined(_MSC_VER)
+    // The macOS game's resource ends with the material type: its members
+    // begin in the last bytes of LoadableResource and fill 128 bytes.
     [[bg3::hidden]] __int32 field_8c;
+#endif
 };
 
 struct TextureResource : public LoadableResource

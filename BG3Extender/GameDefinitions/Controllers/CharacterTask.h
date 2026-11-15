@@ -55,6 +55,7 @@ struct PreviewEffectMap
 
 struct CharacterTask : public ProtectedGameObject<CharacterTask>
 {
+#if defined(_MSC_VER)
 	virtual ~CharacterTask() {}
 	virtual CharacterTask* Create() = 0;
 	virtual void RaiseFlags(CharacterTaskFlags flags) = 0;
@@ -92,6 +93,52 @@ struct CharacterTask : public ProtectedGameObject<CharacterTask>
 	virtual bool IsReady() = 0;
 	virtual EntityHandle& GetUsedGameObject2(EntityHandle& eh) = 0;
 	virtual void GetAPDescription(TaskInfo& desc) = 0;
+#else
+	// The macOS game's ecl::CharacterTask: the result of an input event, the
+	// error flags and the entity handles come back in registers, the input event
+	// in its slot is the one the input controller hands on, not a text event,
+	// a pause and the preview effect have slots of their own, and the preview
+	// tiles are a pointer to the spell preview's tiles, which is not declared,
+	// or none (Mac/Layout/DeclaredVirtuals.cpp).
+	virtual ~CharacterTask() {}
+	virtual CharacterTask* Create() const = 0;
+	virtual void RaiseFlags(CharacterTaskFlags flags) = 0;
+	virtual void ClearFlags(CharacterTaskFlags flags) = 0;
+	virtual void SetCharacter(Character* c) = 0;
+	virtual void Start() = 0;
+	virtual void Stop() = 0;
+	virtual bool CanExecute() = 0;
+	virtual bool CanForceExecute() = 0;
+	virtual int GetPriority(int previousPriority) = 0;
+	virtual int GetExecutePriority(int previousPriority) = 0;
+	virtual Array<stats::ActionResourceCost> GetActionCosts() const = 0;
+	virtual void GetAPWarning(TaskInfo&, bool) const = 0;
+	virtual uint64_t GetError() const = 0;
+	virtual void RequestCursor() = 0;
+	virtual void SetCursor() = 0;
+	virtual void GetTaskInfo(TaskInfo&, void* /* TargetingInfo */) const = 0;
+	virtual uint16_t OnInputEvent(input::InputEvent const& e) = 0;
+	virtual bool EnterPreview() = 0;
+	virtual void UpdatePreview(GameTime const&) = 0;
+	virtual void ExitPreview() = 0;
+	virtual bool IsPreviewing() const = 0;
+	virtual bool IsLimitedPreview() const = 0;
+	virtual bool InterruptsRunningTask() const = 0;
+	virtual bool GetShowPreview(TaskPreviewInfo&) const = 0;
+	virtual bool Enter() = 0;
+	virtual bool Update(GameTime const&) = 0;
+	virtual void Exit() = 0;
+	virtual bool CanExit(bool) const = 0;
+	virtual void OnGamePaused(bool paused) = 0;
+	virtual bool ShouldExitOnReset() = 0;
+	virtual TranslatedString GetDescription() const = 0;
+	virtual TextLine GetDescriptionFormatted() const = 0;
+	virtual std::optional<void const*> GetPreviewTiles() const = 0;
+	virtual uint64_t CreatePreviewEffect() = 0;
+	virtual bool IsReady() const = 0;
+	virtual uint64_t GetUsedGameObject() const = 0;
+	virtual void GetAPDescription(TaskInfo& desc) const = 0;
+#endif
 
 	TaskInfo TaskInfo;
 	Character* Character;
@@ -190,6 +237,7 @@ struct CharacterTask_Item_Interact_Area : public CharacterTask
 
 struct CharacterMoveTask : public CharacterTask
 {
+#if defined(_MSC_VER)
 	virtual bool NeedsMovement(std::optional<glm::vec3>) = 0;
 	virtual bool CheckCanReachTarget() = 0;
 	virtual EntityHandle& GetTarget(EntityHandle&) = 0;
@@ -206,6 +254,28 @@ struct CharacterMoveTask : public CharacterTask
 	virtual bool PrependPathToPickupEntity(AiPath*) = 0;
 	virtual std::optional<glm::vec3> GetPickupEntityPosition() = 0;
 	virtual EntityHandle& GetPickupEntity(EntityHandle&) = 0;
+#else
+	// The macOS game's ecl::CharacterMoveTask: the target is a reference to
+	// the task's, the pickup entity's handle and its position come back in
+	// registers, and prepending the path returns nothing
+	// (Mac/Layout/DeclaredVirtuals.cpp).
+	virtual bool NeedsMovement(std::optional<glm::vec3>) const = 0;
+	virtual bool CheckCanReachTarget() const = 0;
+	virtual EntityHandle const& GetTarget() const = 0;
+	virtual bool GetTargetInfo(navigation::TargetInfo&) = 0;
+	virtual bool GetPreviewTargetInfo(navigation::TargetInfo&) = 0;
+	virtual void OnCalculatePathStarted() = 0;
+	virtual void OnCalculatePathFinished(AiPath*) = 0;
+	virtual void OnMovePreviewDisabled() = 0;
+	virtual void HandlePointAndClick(uint32_t PointAndClickActionType, EntityHandle const&) = 0;
+	virtual void GeneratePreview(AiPath*, bool, bool) = 0;
+	virtual void GenerateTargetCircleScaleAndColor(EntityHandle const&) = 0;
+	virtual bool CanShowMoveFailedMessage() const = 0;
+	virtual bool TrimPath(AiPath&) = 0;
+	virtual void PrependPathToPickupEntity(AiPath*) const = 0;
+	virtual std::optional<glm::vec3> GetPickupEntityPosition() const = 0;
+	virtual uint64_t GetPickupEntity() const = 0;
+#endif
 
 	float TargetCircleScale;
 	int TargetCircleColor;

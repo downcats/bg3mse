@@ -282,7 +282,13 @@ inline StaticTypeInformation::InitializerProc* MakeDeferredTypeInitializer(Overl
     return &MakeDeferredArrayType<T>;
 }
 
+#if defined(_MSC_VER)
 template <class T, int Size>
+#else
+// std::array's size is a size_t, and only MSVC deduces it for an int
+// parameter: elsewhere this overload is never chosen, and an array has no type.
+template <class T, size_t Size>
+#endif
 inline StaticTypeInformation::InitializerProc* MakeDeferredTypeInitializer(Overload<std::array<T, Size>>)
 {
     return &MakeDeferredArrayType<T>;
@@ -367,7 +373,7 @@ inline StaticTypeInformation& GetStaticTypeInfoInternal(Overload<T>) requires Is
 }
 
 template <class T>
-StaticTypeInformation& GetStaticTypeInfoInternal(Overload<T>) requires !IsStruct<T> && !IsEnum<T> && !IsBitfield<T> && !IsEvent<T>
+StaticTypeInformation& GetStaticTypeInfoInternal(Overload<T>) requires (!IsStruct<T>) && (!IsEnum<T>) && (!IsBitfield<T>) && (!IsEvent<T>)
 {
     static StaticTypeInformation info{ nullptr, MakeDeferredTypeInitializer(Overload<T>{}) };
     return info;

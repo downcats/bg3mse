@@ -19,6 +19,7 @@ void SRWSpinLock::ReadUnlock()
 
 void SRWSpinLock::WriteLock()
 {
+#if defined(_MSC_VER)
     if (OwningThreadId == NullThreadId || OwningThreadId != GetCurrentThreadId()) {
         WriteWait();
 
@@ -26,6 +27,11 @@ void SRWSpinLock::WriteLock()
     }
 
     ++WriteEnterCount;
+#else
+    // The Mac game has this as a function of its own, which is called.
+    static_assert(sizeof(SRWSpinLock) == sizeof(mac::GameRecursiveSpinLock));
+    mac::GameSpinWriteLock(reinterpret_cast<mac::GameRecursiveSpinLock*>(this));
+#endif
 }
 
 void SRWSpinLock::WriteUnlock()

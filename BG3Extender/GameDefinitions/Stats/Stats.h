@@ -57,7 +57,13 @@ struct Modifier : public Noncopyable<Modifier>
 
 struct ModifierList : public Noncopyable<ModifierList>
 {
+#if defined(_MSC_VER)
     CNamedElementManager<Modifier> Attributes;
+#else
+    // The macOS game's list is its manager of attributes with the name after
+    // the manager's last member, in the manager's own last four bytes.
+    [[no_unique_address]] CNamedElementManager<Modifier> Attributes;
+#endif
     FixedString Name;
 
     inline FixedString const& GetElementName() const
@@ -143,7 +149,12 @@ struct RPGStats : public ProtectedGameObject<RPGStats>
     Modifier* CurrentParsedType;
     TreasureTable* CurrentTreasureTable;
     TreasureCategory* CurrentTreasureCategory;
+#if defined(_MSC_VER)
     uint64_t RNG[5];
+#else
+    // The macOS game's random number generator is a word longer.
+    uint64_t RNG[6];
+#endif
     HashMap<FixedString, float>* ExtraData;
     LegacyMap<FixedString, FixedString> CategoryMappings;
     LegacyMap<FixedString, int32_t> WeaponCounters;

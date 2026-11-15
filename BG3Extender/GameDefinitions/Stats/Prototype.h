@@ -39,7 +39,14 @@ struct SpellPrototypeAnimationData
     std::array<FixedString, 3> Part4;
     std::array<FixedString, 3> Part1;
     std::array<FixedString, 3> Part5;
+#if defined(_MSC_VER)
     Array<std::array<FixedString, 3>> Part2;
+#else
+    // The macOS game's member is a set made by new[] (ls::LEGACY_Set): its
+    // block begins 16 bytes before the first element, where an Array would
+    // free it.
+    TrackedCompactSet<std::array<FixedString, 3>> Part2;
+#endif
     std::array<FixedString, 3> Part3;
     std::array<FixedString, 3> Part7;
     std::array<FixedString, 3> Part8;

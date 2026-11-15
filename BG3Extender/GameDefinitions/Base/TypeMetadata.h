@@ -16,7 +16,13 @@ concept IsArray = requires(T a)
     typename T::value_type;
     { a[0] } -> std::same_as<typename T::value_type>;
 }
+#if defined(_MSC_VER)
 || std::derived_from<T, ::Noesis::BaseCollection>;
+#else
+// False for a T that is incomplete here, which std::derived_from is with
+// MSVC; with clang and libc++ it is an error.
+|| (requires { sizeof(T); } && std::derived_from<T, ::Noesis::BaseCollection>);
+#endif
 
 template <class T>
 concept IsMap = requires(T a)
@@ -90,7 +96,7 @@ static_assert(IsVariant<std::variant<int, STDString>>);
 template <class T>
 constexpr bool IsIntegralAlias = false;
 
-#define MARK_INTEGRAL_ALIAS(ty) template <> constexpr bool IsIntegralAlias<ty> = true;
+#define MARK_INTEGRAL_ALIAS(ty) template <> inline constexpr bool IsIntegralAlias<ty> = true;
 
 
 
@@ -113,7 +119,7 @@ concept IsByVal = ByValType<T>;
 
 #define MARK_BY_VALUE_TYPE(cls) \
     static_assert(std::is_default_constructible_v<cls>, "By-value types must be default constructible"); \
-    template<> constexpr bool ByValType<cls> = true;
+    template <> inline constexpr bool ByValType<cls> = true;
 
 
 MARK_BY_VALUE_TYPE(bool)

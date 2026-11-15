@@ -113,12 +113,29 @@ BEGIN_NS(rf)
 
 struct Camera
 {
+#if defined(_MSC_VER)
     float field_0;
     glm::vec3 field_4;
+#else
+    // The macOS game's camera begins with the view matrix. A script written
+    // for Windows finds both names here too: they read as 0 and the zero
+    // vector and take no value.
+    //# P_STAND_IN(field_0, GetMissingFloat, SetMissingFloat)
+    //# P_STAND_IN(field_4, GetMissingVector, SetMissingVector)
+    float GetMissingFloat() const { return 0.0f; }
+    void SetMissingFloat(float) {}
+    glm::vec3 GetMissingVector() const { return glm::vec3(0.0f); }
+    void SetMissingVector(glm::vec3 const&) {}
+#endif
     glm::mat4 ViewMatrix;
     glm::mat4 InvViewMatrix;
     glm::mat4 ProjectionMatrix;
     glm::mat4 InvProjectionMatrix;
+#if !defined(_MSC_VER)
+    // The macOS game's camera keeps both products before the planes.
+    [[bg3::hidden]] glm::mat4 ViewProjectionMatrix;
+    [[bg3::hidden]] glm::mat4 OffsetViewProjectionMatrix;
+#endif
     //glm::mat4 GetViewProjectionMatrix;
     //glm::mat4 GetOffsetViewProjectionMatrix;
     std::array<glm::vec4, 10> CullingPlanes;
@@ -126,6 +143,7 @@ struct Camera
 
 struct CameraController : public ProtectedGameObject<CameraController>
 {
+#if defined(_MSC_VER)
     virtual ~CameraController() = 0;
     virtual bool Enter() = 0;
     virtual bool Exit() = 0;
@@ -150,8 +168,33 @@ struct CameraController : public ProtectedGameObject<CameraController>
     virtual void SetLookAtShake(float, float) = 0;
     virtual void SetWobble(float, float) = 0;
     virtual glm::vec3 GetDistance_M() = 0;
+#else
+    // The macOS game's rf::CameraController: entered and left with the render
+    // view, placed and pointed at a position, the result of an input event in
+    // a register, and nothing after IsValid (Mac/Layout/DeclaredVirtuals.cpp).
+    virtual ~CameraController() = 0;
+    virtual bool Enter(struct RenderView const* view, CameraController const* previous) = 0;
+    virtual bool Exit(struct RenderView const* view) = 0;
+    virtual float GetFov() const = 0;
+    virtual float GetAspectRatio() const = 0;
+    virtual bool Place(glm::vec3 const& position, glm::vec3 const& lookAt) = 0;
+    virtual bool DoLookAt(glm::vec3 const& lookAt) = 0;
+    virtual bool EditorLookAt(glm::vec3 const&) = 0;
+    virtual void EditorZoomExtents(glm::vec3 const&, float) = 0;
+    virtual glm::vec3 const& GetWorldTranslate() const = 0;
+    virtual void SetWorldTranslate(glm::vec3 const&) = 0;
+    virtual glm::quat const& GetWorldRotate() const = 0;
+    virtual void SetWorldRotate(glm::quat const&) = 0;
+    virtual Transform const& GetWorldTransform() const = 0;
+    virtual void SetWorldTransform(Transform const&) = 0;
+    virtual uint16_t OnInputEvent(input::InputEvent const& inputEvent) = 0;
+    virtual bool IsValid() const = 0;
+#endif
 
+#if defined(_MSC_VER)
+    // The macOS game's controller has no such member: the flags follow the vtable pointer.
     [[bg3::hidden]] __int64 field_8;
+#endif
     bool ViewDirty;
     bool ProjectionDirty;
     bool IsOrthographic;
@@ -163,12 +206,22 @@ struct CameraController : public ProtectedGameObject<CameraController>
     Transform WorldTransform;
     glm::vec3 LookAt;
     glm::vec3 field_58;
+#if !defined(_MSC_VER)
+    // The macOS game's controller starts the orthographic bounds at 0x60:
+    // nothing writes the 4 bytes before them.
+    [[bg3::hidden]] uint32_t field_5C;
+#endif
     float OrthoLeft;
     float OrthoRight;
     float OrthoBottom;
     float OrthoTop;
     FixedString ID;
+#if defined(_MSC_VER)
     [[bg3::hidden]] __int64 field_78;
+#else
+    // And the camera at 0x80: nothing writes the 12 bytes after the ID.
+    [[bg3::hidden]] std::array<uint32_t, 3> field_74;
+#endif
     Camera Camera;
     std::array<glm::vec3, 8> FrustumPoints;
 };
@@ -181,7 +234,12 @@ struct CameraComponent : public BaseComponent
 {
     DEFINE_COMPONENT(Camera, "ls::CameraComponent")
 
+#if defined(_MSC_VER)
     uint32_t MasterBehaviorType;
+#else
+    // The macOS game's code reads and writes one byte here.
+    uint8_t MasterBehaviorType;
+#endif
     rf::CameraController* Controller;
     int ExposureSettingIndex;
     bool Active;

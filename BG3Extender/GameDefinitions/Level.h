@@ -40,12 +40,42 @@ struct LevelDataManager : public ProtectedGameObject<LevelDataManager>
     HashMap<FixedString, LevelData*> Levels;
 };
 
+#if !defined(_MSC_VER)
+// The first template of each name (LevelData::TrackedTemplates), in a map
+// kept for the level data and the thread that asks: what a script holds of
+// it stays that level's, and what it writes there does not reach the game.
+inline HashMap<FixedString, GameObjectTemplate*>* FirstTemplates(void const* owner, HashMap<FixedString, Array<GameObjectTemplate*>> const& lists)
+{
+    thread_local std::unordered_map<void const*, HashMap<FixedString, GameObjectTemplate*>> maps;
+    auto& first = maps[owner];
+    first.clear();
+    for (uint32_t i = 0; i < lists.size(); i++) {
+        auto const& templates = lists.values()[i];
+        if (templates.size() > 0) first.set(lists.keys()[i], templates[0]);
+    }
+    return &first;
+}
+
+#endif
 struct LevelData : public ProtectedGameObject<LevelData>
 {
     LevelDesc* LevelDesc;
     LevelMetaData* Meta;
     [[bg3::hidden]] LevelDataManager* LevelDataManager;
+#if defined(_MSC_VER)
     HashMap<FixedString, GameObjectTemplate*> TrackedTemplates;
+#else
+    // The macOS game keeps an array of templates for each name
+    // (Mac/Layout/GameGlobals.h). A script written for Windows reads
+    // TrackedTemplates here too, as the first template of each name; the
+    // arrays themselves are TrackedTemplateLists.
+    HashMap<FixedString, Array<GameObjectTemplate*>> TrackedTemplateLists;
+    //# P_STAND_IN_GETTER(TrackedTemplates, GetTrackedTemplates)
+    HashMap<FixedString, GameObjectTemplate*>* GetTrackedTemplates() const
+    {
+        return FirstTemplates(this, TrackedTemplateLists);
+    }
+#endif
     [[bg3::hidden]] CRITICAL_SECTION CriticalSection;
     [[bg3::hidden]] LegacyRefMap<FixedString, LevelLoadState> LoadStates;
     uint32_t State;
