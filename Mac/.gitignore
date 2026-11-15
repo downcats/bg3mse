@@ -1,0 +1,3 @@
+# Norbyte's .gitignore ignores every Release/ directory (Visual Studio
+# output); this one holds sources.
+!Release/

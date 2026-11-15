@@ -347,3 +347,6 @@ TestModule/Mods/BG3Ext_Testsuite/.vscode/settings.json
 BG3Extender/Lua.bundle
 BG3Extender/LuaScripts/.vscode
 BG3Extender/GameDefinitions/Generated
+
+# macOS build
+/build*/
