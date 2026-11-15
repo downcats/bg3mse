@@ -1,0 +1,11 @@
+[12:00:01.112] [INFO ] bg3mse loaded
+[12:00:31.508] [OSI  ] @BG3MSE-IGT|server|begin|1|4|server reached Running
+[12:00:31.508] [OSI  ] @BG3MSE-IGT|server|LUA-091|Ext.Math.Add|planned|pure
+[12:00:31.508] [OSI  ] @BG3MSE-IGT|server|LUA-009|Norbyte:StatTests/TestStatsAttributes|planned|proved
+[12:00:31.508] [OSI  ] @BG3MSE-IGT|server|LUA-068|Ext.Level.RaycastAny|planned|unproved
+[12:00:31.508] [OSI  ] @BG3MSE-IGT|server|LUA-065|Ext.Level.GetHeightsAt|planned|unproved
+[12:00:31.508] [OSI  ] @BG3MSE-IGT|server|EV-09|Ext.Events.Tick|planned|event
+[12:00:31.509] [OSI  ] @BG3MSE-IGT|server|-|Ext.Level.GetNoSuchThing|uncovered|registered, but no case of this context names it
+[12:00:31.509] [OSI  ] @BG3MSE-IGT|server|plan|4|1
+[12:00:31.540] [OSI  ] @BG3MSE-IGT|server|LUA-091|Ext.Math.Add|pass|
+[12:00:31.541] [OSI  ] @BG3MSE-IGT|server|LUA-009|Norbyte:StatTests/TestStatsAttributes|error|Tests/StatTests.lua:12: assertion failed! \n stack traceback: ...

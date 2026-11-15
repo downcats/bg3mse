@@ -1,0 +1,35 @@
+== build
+mp-host-log.txt: bg3mse 1.0 loaded (commit abc, extender 34, Release)
+host client: Ext.Utils.Version 34, game v4.1.1.7631656
+host server: Ext.Utils.Version 34, game v4.1.1.7631656
+remote client: Ext.Utils.Version 33, game v4.1.1.7631656
+== pass
+host client NET-20 MP.Client#hello: this is the host's client; user 65537
+host server NET-20 MP.Server#peers: user 65537: the host's client; user 131073: another machine's client
+host server NET-20 MP.Channel.SendToClient#types: every value as sent
+remote client NET-20 MP.Client#hello: this is another machine's client; user 131073
+remote client NET-20 MP.Channel.FromServer#types: every value as sent
+== error
+NET-20
+  host server MP.Channel.FromClient#types: differs: Tenth=0.1
+== multiplayer
+MP.Channel.FromClient#types
+  host server error: differs: Tenth=0.1
+MP.Channel.FromServer#types
+  remote client pass: every value as sent
+MP.Channel.SendToClient#types
+  host server pass: every value as sent
+MP.Client#hello
+  host client pass: this is the host's client; user 65537
+  remote client pass: this is another machine's client; user 131073
+MP.Server#peers
+  host server pass: user 65537: the host's client; user 131073: another machine's client
+== overlay
+mp-host-log.txt: IMGUI: the game's first frame was seen (2560 x 1440 pixels, standard dynamic range)
+== opt-in cases not exercised
+host client: client Ext.IMGUI#hdr (HDR): skip
+== total
+host client: 1 planned, 1 pass, 0 error, 0 skip, 0 crashed, 0 uncovered
+host server: 3 planned, 2 pass, 1 error, 0 skip, 0 crashed, 0 uncovered
+remote client: 2 planned, 2 pass, 0 error, 0 skip, 0 crashed, 0 uncovered
+complete

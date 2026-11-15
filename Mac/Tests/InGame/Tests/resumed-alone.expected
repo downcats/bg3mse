@@ -1,0 +1,19 @@
+== build
+resumed-log.txt: bg3mse loaded
+== pass
+client LUA-091 Ext.Math.Add
+server EV-09 Ext.Events.Tick: Time 0.033
+== crashed
+LUA-068
+  server Ext.Level.RaycastAny: the previous launch ended inside this case
+== skip
+LUA-065
+  server Ext.Level.GetHeightsAt: no character position in this session
+== missing
+client: no end line (the run did not finish)
+client LUA-113 Ext.Audio.Stop: no result line
+server: the run resumed after a crash, but the log of the launch that crashed was not given
+== total
+client: 2 planned, 1 pass, 0 error, 0 skip, 0 crashed, 0 uncovered
+server: 0 planned, 1 pass, 0 error, 1 skip, 1 crashed, 0 uncovered
+incomplete: lines are missing

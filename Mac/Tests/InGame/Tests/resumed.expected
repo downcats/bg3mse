@@ -1,0 +1,26 @@
+== build
+crashed-log.txt: bg3mse loaded
+resumed-log.txt: bg3mse loaded
+== pass
+client LUA-091 Ext.Math.Add
+server LUA-091 Ext.Math.Add
+server EV-09 Ext.Events.Tick: Time 0.033
+== error
+LUA-009
+  server Norbyte:StatTests/TestStatsAttributes: Tests/StatTests.lua:12: assertion failed! \n stack traceback: ...
+== crashed
+LUA-068
+  server Ext.Level.RaycastAny: the previous launch ended inside this case
+== uncovered
+-
+  server Ext.Level.GetNoSuchThing: registered, but no case of this context names it
+== skip
+LUA-065
+  server Ext.Level.GetHeightsAt: no character position in this session
+== missing
+client: no end line (the run did not finish)
+client LUA-113 Ext.Audio.Stop: no result line
+== total
+client: 2 planned, 1 pass, 0 error, 0 skip, 0 crashed, 0 uncovered
+server: 5 planned, 2 pass, 1 error, 1 skip, 1 crashed, 1 uncovered
+incomplete: lines are missing

@@ -1,0 +1,11 @@
+[12:03:10.002] [INFO ] bg3mse loaded
+[12:03:40.911] [OSI  ] @BG3MSE-IGT|server|begin|1|4|resume after Ext.Level.RaycastAny
+[12:03:40.911] [OSI  ] @BG3MSE-IGT|server|LUA-068|Ext.Level.RaycastAny|crashed|the previous launch ended inside this case
+[12:03:40.950] [OSI  ] @BG3MSE-IGT|server|LUA-065|Ext.Level.GetHeightsAt|skip|no character position in this session
+[12:03:41.300] [OSI  ] @BG3MSE-IGT|server|EV-09|Ext.Events.Tick|pass|Time 0.033
+[12:03:41.300] [OSI  ] @BG3MSE-IGT|server|end|1|1|1|1|1
+[12:03:43.100] [OSI  ] @BG3MSE-IGT|client|begin|1|2|client after the server run
+[12:03:43.100] [OSI  ] @BG3MSE-IGT|client|LUA-091|Ext.Math.Add|planned|pure
+[12:03:43.100] [OSI  ] @BG3MSE-IGT|client|LUA-113|Ext.Audio.Stop|planned|proved
+[12:03:43.100] [OSI  ] @BG3MSE-IGT|client|plan|2|0
+[12:03:43.131] [OSI  ] @BG3MSE-IGT|client|LUA-091|Ext.Math.Add|pass|

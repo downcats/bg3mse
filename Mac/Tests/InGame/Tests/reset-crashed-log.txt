@@ -1,0 +1,12 @@
+[21:00:01.112] [INFO ] bg3mse 0.9.0 loaded (commit 0123456789ab, extender v28, Release)
+[21:00:31.508] [OSI  ] @BG3MSE-IGT|server|begin|4|1|server reached Running
+[21:00:31.508] [OSI  ] @BG3MSE-IGT|server|version|34|v4.1.1.7631656
+[21:00:31.508] [OSI  ] @BG3MSE-IGT|server|LUA-091|Ext.Math.Add|planned|pure
+[21:00:31.508] [OSI  ] @BG3MSE-IGT|server|LUA-037|Ext.Debug.Reset|planned|reset
+[21:00:31.508] [OSI  ] @BG3MSE-IGT|server|LUA-080|Ext.Vars.RegisterUserVariable#reset|planned|reset
+[21:00:31.508] [OSI  ] @BG3MSE-IGT|server|EV-07|Ext.Events.ResetCompleted|planned|reset
+[21:00:31.508] [OSI  ] @BG3MSE-IGT|server|EV-08|Ext.Events.Shutdown|planned|reset
+[21:00:31.509] [OSI  ] @BG3MSE-IGT|server|plan|1|0
+[21:00:31.540] [OSI  ] @BG3MSE-IGT|server|LUA-091|Ext.Math.Add|pass|
+[21:00:31.573] [OSI  ] @BG3MSE-IGT|server|end|1|0|0|0|0
+[21:00:31.573] [OSI  ] @BG3MSE-IGT|server|reset|4|after the main phase

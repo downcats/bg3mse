@@ -1,0 +1,14 @@
+[21:04:10.002] [INFO ] bg3mse 0.9.0 loaded (commit 0123456789ab, extender v28, Release)
+[21:04:40.911] [OSI  ] @BG3MSE-IGT|server|reset-begin|4|2|resume after the Lua reset
+[21:04:40.911] [OSI  ] @BG3MSE-IGT|server|LUA-037|Ext.Debug.Reset|crashed|the previous launch ended during the Lua reset
+[21:04:40.911] [OSI  ] @BG3MSE-IGT|server|LUA-080|Ext.Vars.RegisterUserVariable#reset|skip|the Lua reset did not complete: the launch ended inside it
+[21:04:40.911] [OSI  ] @BG3MSE-IGT|server|EV-07|Ext.Events.ResetCompleted|skip|the Lua reset did not complete: the launch ended inside it
+[21:04:40.911] [OSI  ] @BG3MSE-IGT|server|EV-08|Ext.Events.Shutdown|pass|
+[21:04:40.911] [OSI  ] @BG3MSE-IGT|server|reset-end|1|0|2|1|0
+[21:04:43.100] [OSI  ] @BG3MSE-IGT|client|begin|4|1|client after the server run
+[21:04:43.100] [OSI  ] @BG3MSE-IGT|client|version|34|v4.1.1.7631656
+[21:04:43.100] [OSI  ] @BG3MSE-IGT|client|LUA-091|Ext.Math.Add|planned|pure
+[21:04:43.100] [OSI  ] @BG3MSE-IGT|client|plan|1|0
+[21:04:43.131] [OSI  ] @BG3MSE-IGT|client|LUA-091|Ext.Math.Add|pass|
+[21:04:43.131] [OSI  ] @BG3MSE-IGT|client|end|1|0|0|0|0
+[21:04:43.131] [OSI  ] @BG3MSE-IGT|client|notice|Server: 2 pass, 0 error, 2 skip, 1 crashed|Client: 1 pass, 0 error, 0 skip, 0 crashed

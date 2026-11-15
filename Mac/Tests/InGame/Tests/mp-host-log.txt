@@ -1,0 +1,21 @@
+[00000100] [INFO ] bg3mse 1.0 loaded (commit abc, extender 34, Release)
+[00000200] [OSI  ] @BG3MSE-IGT|server|machine|host
+[00000201] [OSI  ] @BG3MSE-IGT|server|begin|mp1|3|server reached Running
+[00000202] [OSI  ] @BG3MSE-IGT|server|version|34|v4.1.1.7631656
+[00000203] [OSI  ] @BG3MSE-IGT|server|NET-20|MP.Server#peers|planned|proved
+[00000204] [OSI  ] @BG3MSE-IGT|server|NET-20|MP.Channel.SendToClient#types|planned|proved
+[00000205] [OSI  ] @BG3MSE-IGT|server|NET-20|MP.Channel.FromClient#types|planned|proved
+[00000206] [OSI  ] @BG3MSE-IGT|server|plan|3|0
+[00000300] [OSI  ] @BG3MSE-IGT|client|machine|host
+[00000301] [OSI  ] @BG3MSE-IGT|client|begin|mp1|1|client of the host, in a two-machine run
+[00000302] [OSI  ] @BG3MSE-IGT|client|version|34|v4.1.1.7631656
+[00000303] [OSI  ] @BG3MSE-IGT|client|NET-20|MP.Client#hello|planned|proved
+[00000304] [OSI  ] @BG3MSE-IGT|client|plan|1|0
+[00000400] [OSI  ] @BG3MSE-IGT|client|NET-20|MP.Client#hello|pass|this is the host's client; user 65537
+[00000500] [OSI  ] @BG3MSE-IGT|server|NET-20|MP.Server#peers|pass|user 65537: the host's client; user 131073: another machine's client
+[00000600] [OSI  ] @BG3MSE-IGT|server|NET-20|MP.Channel.SendToClient#types|pass|every value as sent
+[00000700] [OSI  ] @BG3MSE-IGT|server|NET-20|MP.Channel.FromClient#types|error|differs: Tenth=0.1
+[00000701] [OSI  ] @BG3MSE-IGT|server|end|2|1|0|0|0
+[00000800] [INFO ] IMGUI: the game's first frame was seen (2560 x 1440 pixels, standard dynamic range)
+[00000900] [OSI  ] @BG3MSE-IGT|client|end|1|0|0|0|0
+[00000901] [OSI  ] @BG3MSE-IGT|client|notice|not exercised|client Ext.IMGUI#hdr (HDR): skip

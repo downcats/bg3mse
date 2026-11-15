@@ -1,0 +1,10 @@
+Extender runtime log
+@BG3MSE-IGT|client|machine|remote
+@BG3MSE-IGT|client|begin|mp1|2|client of a machine that is not the host
+@BG3MSE-IGT|client|version|33|v4.1.1.7631656
+@BG3MSE-IGT|client|NET-20|MP.Client#hello|planned|proved
+@BG3MSE-IGT|client|NET-20|MP.Channel.FromServer#types|planned|proved
+@BG3MSE-IGT|client|plan|2|0
+@BG3MSE-IGT|client|NET-20|MP.Client#hello|pass|this is another machine's client; user 131073
+@BG3MSE-IGT|client|NET-20|MP.Channel.FromServer#types|pass|every value as sent
+@BG3MSE-IGT|client|end|2|0|0|0|0
