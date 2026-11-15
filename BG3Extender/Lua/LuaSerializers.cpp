@@ -47,6 +47,10 @@ namespace bg3se::lua
 
     LuaSerializer& serialize(LuaSerializer& s, bg3se::stats::TreasureTable*& v)
     {
+        if (!s.IsWriting && !v) {
+            v = GameAlloc<bg3se::stats::TreasureTable>();
+        }
+
         serialize(s, *v);
         return s;
     }
@@ -209,8 +213,12 @@ namespace bg3se::lua
         return s;
     }
 
-    LuaSerializer& serialize(LuaSerializer& s, TreasureCategoryItem* v)
+    LuaSerializer& serialize(LuaSerializer& s, TreasureCategoryItem*& v)
     {
+        if (!s.IsWriting && !v) {
+            v = GameAlloc<TreasureCategoryItem>();
+        }
+
         serialize(s, *v);
         return s;
     }

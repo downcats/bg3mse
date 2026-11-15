@@ -3,6 +3,9 @@
 #include <GameDefinitions/Level.h>
 #include <GameDefinitions/Physics.h>
 #include <GameDefinitions/Surface.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/VirtualCalls.h>
+#endif
 
 /// <lua_module>Level</lua_module>
 BEGIN_NS(lua::level)
@@ -267,6 +270,15 @@ phx::PhysicsSceneBase* GetPhysicsScene(lua_State* L)
         phys = level->PhysicsScene;
     }
 
+#if !defined(_MSC_VER)
+    // Its virtual functions are called in the game's slots only where that
+    // was found when the extender started.
+    if (phys && !mac::binding::VirtualsConfirmed("phx::PhysicsSceneBase")) {
+        luaL_error(L, "Physics scene unavailable: its virtual functions are not where this build calls them");
+        return nullptr;
+    }
+
+#endif
     if (!phys) {
         luaL_error(L, "No level loaded - physics scene unavailable");
     }

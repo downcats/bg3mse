@@ -301,6 +301,13 @@ StatsExpressionRef do_get(lua_State* L, int index, Overload<StatsExpressionRef>)
     auto str = get<std::optional<StringView>>(L, index);
     if (str) {
         auto manager = GetStaticSymbols().eoc__DynamicStatsExpressionManager;
+#if !defined(_MSC_VER)
+        // An entry the engine table did not resolve on this game.
+        if (!manager || !*manager) {
+            luaL_error(L, "Cannot parse a stats expression: the expression manager is unavailable on this game");
+            return {};
+        }
+#endif
         Guid hash = StatsExpressionInternal::Hash(*str);
         return (*manager)->CreateStatsExpression(hash, *str);
     }

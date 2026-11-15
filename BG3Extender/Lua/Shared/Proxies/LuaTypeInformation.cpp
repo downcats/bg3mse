@@ -4,6 +4,9 @@
 #include <GameDefinitions/Generated/EnumerationMeta.h>
 #include <GameDefinitions/Generated/EventsMeta.h>
 #include <Lua/Shared/Proxies/PropertyMapDependencies.h>
+#if !defined(_MSC_VER)
+#include <Mac/TypeNames/DeclaredAsClass.h>
+#endif
 
 BEGIN_SE()
 
@@ -97,10 +100,19 @@ void RegisterObjectProxyTypeInformation()
 #define GENERATING_TYPE_INFO
 #define ADD_TYPE(prop, type) ty.Members.insert(std::make_pair(FixedString(prop), GetTypeInfoRef<type>()));
 
+#if defined(_MSC_VER)
 #define BEGIN_CLS_TN(clsName, typeName, id) ([]() { \
     using TClass = clsName;\
     auto& ty = RegisterClassDefn(#typeName, typeid(TClass).name(), lua::GetStaticPropertyMap<TClass>(), \
         GetStaticComponentName<TClass>(), GetStaticSystemName<TClass>());
+#else
+// The native name scripts see is MSVC's typeid name ("struct bg3se::esv::Character"),
+// which another compiler's typeid does not give (Mac/TypeNames/MsvcTypeName.h).
+#define BEGIN_CLS_TN(clsName, typeName, id) ([]() { \
+    using TClass = clsName;\
+    auto& ty = RegisterClassDefn(#typeName, mac::typenames::MsvcTypeName<TClass>().c_str(), lua::GetStaticPropertyMap<TClass>(), \
+        GetStaticComponentName<TClass>(), GetStaticSystemName<TClass>());
+#endif
 
 #define BEGIN_CLS(clsName, id) BEGIN_CLS_TN(clsName, clsName, id)
 
@@ -120,6 +132,10 @@ void RegisterObjectProxyTypeInformation()
 #define P_GETTER_SETTER(prop, getter, setter) ty.AddMember(#prop, std::move(GetTypeInfoRef<decltype(GetFunctionReturnType(&TClass::getter))>()));
 #define P_FUN(prop, fun) AddFunctionSignature(ty, #prop, &fun);
 #define P_FALLBACK(getter, setter, next) ty.HasWildcardProperties = true;
+#if !defined(_MSC_VER)
+#define P_STAND_IN(prop, getter, setter) P_GETTER_SETTER(prop, getter, setter)
+#define P_STAND_IN_GETTER(prop, fun) P_GETTER(prop, fun)
+#endif
 
 #include <GameDefinitions/Generated/PropertyMaps.inl>
 
@@ -140,6 +156,10 @@ void RegisterObjectProxyTypeInformation()
 #undef P_GETTER_SETTER
 #undef P_FUN
 #undef P_FALLBACK
+#if !defined(_MSC_VER)
+#undef P_STAND_IN
+#undef P_STAND_IN_GETTER
+#endif
 
     RegisterEnumerationTypeInformation();
     RegisterEventTypeInformation();

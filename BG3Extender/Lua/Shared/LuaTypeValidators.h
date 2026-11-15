@@ -146,6 +146,26 @@ struct STDStringInternals
 
 inline bool Validate(STDString const* s, Overload<STDString>)
 {
+#if !defined(_MSC_VER)
+    // STDStringInternals is the MSVC library's string. Here the string is
+    // libc++'s, as in the game: 16 bytes, which its own accessors read (they
+    // touch nothing but those 16 bytes). The text is inside the string or in
+    // a block of capacity + 1 bytes.
+    auto size = s->size();
+    auto capacity = s->capacity();
+    CHECK(size <= capacity);
+    CHECK(capacity <= MaxStringLengthHeuristic);
+
+    auto text = s->data();
+    if (reinterpret_cast<void const*>(text) < reinterpret_cast<void const*>(s)
+        || reinterpret_cast<void const*>(text) >= reinterpret_cast<void const*>(s + 1)) {
+        CHECK(!IsBadReadPtr(text, (uint64_t)capacity + 1));
+    }
+    // Check null terminator
+    CHECK(text[size] == 0x00);
+
+    return true;
+#else
     auto i = reinterpret_cast<STDStringInternals const*>(s);
     CHECK(i->Size <= i->Capacity);
     CHECK(i->Capacity <= MaxStringLengthHeuristic);
@@ -159,6 +179,7 @@ inline bool Validate(STDString const* s, Overload<STDString>)
     }
 
     return true;
+#endif
 }
 
 inline bool Validate(Noesis::String const* s, Overload<Noesis::String>)
@@ -189,7 +210,11 @@ inline bool Validate(LSStringView const* s, Overload<LSStringView>)
 inline bool Validate(WStringView const* s, Overload<WStringView>)
 {
     CHECK(s->size() <= MaxStringLengthHeuristic);
+#if defined(_MSC_VER)
     CHECK(!IsBadReadPtr(s->data(), (uint64_t)s->size() * 2));
+#else
+    CHECK(!IsBadReadPtr(s->data(), (uint64_t)s->size() * sizeof(wchar_t)));
+#endif
 
     return true;
 }
@@ -271,7 +296,7 @@ inline bool Validate(bg3se::stats::ConditionId const* s, Overload<bg3se::stats::
 }
 
 template <class T> requires std::is_enum_v<T>
-typename bool Validate(T const* v, Overload<T>)
+bool Validate(T const* v, Overload<T>)
 {
 #if defined(ENABLE_FLAKY_HEURISTICS)
     if constexpr (IsBitfield<T>) {
@@ -692,7 +717,7 @@ template <class T>
 bool ValidateAny(T const* v);
 
 template <class T>
-typename bool Validate(OverrideableProperty<T> const* v, Overload<OverrideableProperty<T>>)
+bool Validate(OverrideableProperty<T> const* v, Overload<OverrideableProperty<T>>)
 {
     CHECKR(Validate(&v->IsOverridden, Overload<bool>{}));
     CHECKR(ValidateAny(&v->Value));
@@ -700,7 +725,7 @@ typename bool Validate(OverrideableProperty<T> const* v, Overload<OverrideablePr
 }
 
 template <class T>
-typename bool ValidateRef(OverrideableProperty<T> const* v, Overload<OverrideableProperty<T>>)
+bool ValidateRef(OverrideableProperty<T> const* v, Overload<OverrideableProperty<T>>)
 {
     CHECKR(Validate(&v->IsOverridden, Overload<bool>{}));
     CHECKR(ValidateAny(&v->Value));

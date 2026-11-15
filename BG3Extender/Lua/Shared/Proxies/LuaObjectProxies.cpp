@@ -643,6 +643,43 @@ inline constexpr RawPropertyAccessors::Serializer* PickPropertySerializer()
             .Next = next \
         } },
 
+#if !defined(_MSC_VER)
+// A member of Norbyte's declaration that the macOS game does not hold as he
+// declares it (its stand-in's comment says what a script written for Windows
+// finds): given by the stand-in's functions as by P_GETTER_SETTER and
+// P_GETTER, and in Ext.Types.Serialize, as the member is on Windows.
+#define P_STAND_IN_SERIALIZE(getter) \
+            .Serialize = [](lua_State* L, void const* obj, RawPropertyAccessors const& prop) { \
+                auto value = reinterpret_cast<ObjectType const*>(reinterpret_cast<uint8_t const*>(obj) - prop.Offset)->getter(); \
+                Serialize(L, &value); \
+                return PropertyOperationResult::Success; \
+            },
+
+#define P_STAND_IN(name, getter, setter) \
+        { .Type = PropertyMapEntryType::Property, .Property = { \
+            .Name = #name, \
+            .Getter = [](lua_State* L, LifetimeHandle lifetime, void const* obj, RawPropertyAccessorsHotData const& prop) { \
+                CallGetter(L, reinterpret_cast<ObjectType const*>(reinterpret_cast<uint8_t const*>(obj) - prop.Offset()), &ObjectType::getter); \
+                return PropertyOperationResult::Success; \
+            }, \
+            .Setter = [](lua_State* L, void* obj, int index, RawPropertyAccessorsHotData const& prop) { \
+                CallSetter(L, reinterpret_cast<ObjectType*>(reinterpret_cast<uint8_t*>(obj) - prop.Offset()), index, &ObjectType::setter); \
+                return PropertyOperationResult::Success; \
+            }, \
+            P_STAND_IN_SERIALIZE(getter) \
+        } },
+
+#define P_STAND_IN_GETTER(name, getter) \
+        { .Type = PropertyMapEntryType::Property, .Property = { \
+            .Name = #name, \
+            .Getter = [](lua_State* L, LifetimeHandle lifetime, void const* obj, RawPropertyAccessorsHotData const& prop) { \
+                CallGetter(L, reinterpret_cast<ObjectType const*>(reinterpret_cast<uint8_t const*>(obj) - prop.Offset()), &ObjectType::getter); \
+                return PropertyOperationResult::Success; \
+            }, \
+            .Setter = &GenericSetNonWriteableProperty, \
+            P_STAND_IN_SERIALIZE(getter) \
+        } },
+#endif
 #include <GameDefinitions/Generated/PropertyMaps.inl>
 
 #undef GENERATING_PROPMAP
@@ -663,6 +700,11 @@ inline constexpr RawPropertyAccessors::Serializer* PickPropertySerializer()
 #undef P_GETTER_SETTER
 #undef P_FUN
 #undef P_FALLBACK
+#if !defined(_MSC_VER)
+#undef P_STAND_IN_SERIALIZE
+#undef P_STAND_IN
+#undef P_STAND_IN_GETTER
+#endif
 
 
 static constexpr PropertyMapRegistrationEntry const* AllClassDefns[] = {

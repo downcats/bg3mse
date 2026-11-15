@@ -1,4 +1,7 @@
 #include <Lua/Shared/EntityReplicationEvents.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/ComponentSignals.h>
+#endif
 
 BEGIN_NS(lua)
 
@@ -40,6 +43,14 @@ LuaEntitySubscriptionId EntityEventHelpers::Subscribe(lua_State* L, EntityHandle
 		}
 	}
 
+#if !defined(_MSC_VER)
+	// Not on a game whose code calls a subscriber otherwise than the handlers are written for.
+	auto world = state->GetEntitySystemHelpers().GetEntityWorld();
+	if (!mac::binding::ComponentSignalsConfirmed(world->ComponentOps.Get(*componentType), world->ComponentCallbacks.Get(*componentType), world)) {
+		ERR("No events are available for components of type %s: this game sends them in a way that has not been checked", EnumInfo<ExtComponentType>::GetStore().Find((EnumUnderlyingType)component).GetString());
+		return {};
+	}
+#endif
 	auto& hooks = state->GetComponentEventHooks();
 	auto index = hooks.Subscribe(*componentType, entity, event, flags, std::move(hook));
 	return LuaEntitySubscriptionId((ComponentEventHandleType << 32) | index);

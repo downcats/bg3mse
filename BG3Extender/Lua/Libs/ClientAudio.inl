@@ -1,5 +1,8 @@
 #include <GameDefinitions/Symbols.h>
 #include <GameDefinitions/Sound.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/VirtualCalls.h>
+#endif
 
 /// <lua_module>Audio</lua_module>
 BEGIN_NS(ecl::lua::audio)
@@ -7,7 +10,14 @@ BEGIN_NS(ecl::lua::audio)
 WwiseManager* GetSoundManager()
 {
     auto resourceMgr = GetStaticSymbols().ls__gGlobalResourceManager;
+#if defined(_MSC_VER)
     if (resourceMgr != nullptr && *resourceMgr != nullptr && (*resourceMgr)->SoundManager != nullptr) {
+#else
+    // Its virtual functions are called in the game's slots, and its members
+    // read, only where that was found when the extender started.
+    if (resourceMgr != nullptr && *resourceMgr != nullptr && (*resourceMgr)->SoundManager != nullptr
+        && mac::binding::VirtualsConfirmed("SoundManager")) {
+#endif
         return (*resourceMgr)->SoundManager;
     }
 
@@ -53,7 +63,13 @@ SoundObjectId GetSoundObjectId(lua_State* L, int idx)
         } else if (name == "CineHUD") {
             return snd->CineHUD[playerIndex];
         } else {
+#if defined(_MSC_VER)
             luaL_error(L, "Unknown built-in sound object name: %s", name);
+#else
+            // A string object cannot be passed through "...": clang compiles
+            // such a call into one that aborts.
+            luaL_error(L, "Unknown built-in sound object name: %s", name.c_str());
+#endif
             return InvalidSoundObjectId;
         }
     }
@@ -175,8 +191,13 @@ bool PlayExternalSound(LuaSoundObjectId soundObject, char const* eventName, char
 
 bool LoadBank(const char* bankName)
 {
+#if defined(_MSC_VER)
     SoundNameId bankId{ -1 };
     GetSoundManager()->LoadBank(bankId, bankName);
+#else
+    // The macOS game's function returns the bank's id.
+    SoundNameId bankId = GetSoundManager()->LoadBank(bankName);
+#endif
     return bankId != -1;
 }
 
@@ -188,8 +209,13 @@ bool UnloadBank(const char* bankName)
 
 bool PrepareBank(const char* bankName)
 {
+#if defined(_MSC_VER)
     SoundNameId bankId{ -1 };
     GetSoundManager()->PrepareBank(bankId, bankName);
+#else
+    // The macOS game's function returns the bank's id.
+    SoundNameId bankId = GetSoundManager()->PrepareBank(bankName);
+#endif
     return bankId != -1;
 }
 

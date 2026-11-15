@@ -33,6 +33,19 @@ public:
     static void operator delete(void* ptr, void* place) noexcept
     {}
 
+#if !defined(_MSC_VER)
+    // The virtual destructor needs a non-placement operator delete, and the
+    // one above hides BaseObject's. MSVC compiles the class without one.
+    // The object lives in memory from GameAllocRaw (DynamicClassType::
+    // Construct) and Noesis destroys it with "delete this" when its last
+    // reference goes (BaseRefCounted::OnDestroy), so the memory goes back
+    // the way every BaseObject's does: BaseObject::operator delete, GameFree.
+    static void operator delete(void* ptr)
+    {
+        BaseObject::operator delete(ptr);
+    }
+#endif
+
     static const TypeClass* StaticGetClassType(TypeTag<NsCustomDataContext>*)
     {
         static const TypeClass* type{ nullptr };

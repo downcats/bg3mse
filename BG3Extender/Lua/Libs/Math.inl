@@ -36,14 +36,26 @@ struct TryOpOrFail
         return false;
     }
 
+#if defined(_MSC_VER)
     template <class T1>
     static __forceinline auto DoInPlace(lua_State* L, T1 const& a) -> decltype((void)(T::DoInPlace(L, a)), void())
+#else
+    // Named through a parameter of this template, T::DoInPlace is looked up
+    // when the overload is considered, not when TryOpOrFail<T> is instantiated.
+    template <class T1, class TOp = T>
+    static __forceinline auto DoInPlace(lua_State* L, T1 const& a) -> decltype((void)(TOp::DoInPlace(L, a)), void())
+#endif
     {
         T::DoInPlace(L, a);
     }
 
+#if defined(_MSC_VER)
     template <class T1, class T2>
     static __forceinline auto DoInPlace(lua_State* L, T1 const& a, T2 const& b) -> decltype((void)(T::DoInPlace(L, a, b)), void())
+#else
+    template <class T1, class T2, class TOp = T>
+    static __forceinline auto DoInPlace(lua_State* L, T1 const& a, T2 const& b) -> decltype((void)(TOp::DoInPlace(L, a, b)), void())
+#endif
     {
         T::DoInPlace(L, a, b);
     }

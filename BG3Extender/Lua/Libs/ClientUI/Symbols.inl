@@ -5,12 +5,20 @@ bool SymbolsInitialized{ false };
 template <class T>
 struct SymbolInfo
 {
+#if defined(_MSC_VER)
     static Symbol Name;
+#else
+    // MSVC accepts the definitions below for each type without template<>;
+    // other compilers do not, so elsewhere the member is defined here.
+    static inline Symbol Name;
+#endif
 };
 
+#if defined(_MSC_VER)
 #define FOR_NOESIS_TYPE(T) Symbol SymbolInfo<T>::Name;
 FOR_EACH_NOESIS_TYPE()
 #undef FOR_NOESIS_TYPE
+#endif
 
 Symbol MakeNoesisSymbol(char const* name);
 

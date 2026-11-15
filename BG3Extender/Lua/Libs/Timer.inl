@@ -1,5 +1,8 @@
 #include <Lua/Libs/Timer.h>
 #include <chrono>
+#if !defined(_MSC_VER)
+#include <Mac/Shim/ClockText.h>
+#endif
 
 /// <lua_module>Timer</lua_module>
 BEGIN_NS(lua::timer)
@@ -460,7 +463,14 @@ STDString ClockTime(lua_State* L)
 {
     using namespace std::chrono;
     auto now = system_clock::now();
+#if defined(_MSC_VER)
     return std::format("{0:%F} {0:%T}", now).c_str();
+#else
+    // The same text, without std::format: the C++ library of the oldest
+    // macOS the game runs on does not have it. The time in MSVC's 100 ns
+    // ticks: this system clock counts microseconds.
+    return mac::ClockText(mac::PreciseSystemTime(now)).c_str();
+#endif
 }
 
 void RegisterTimerLib()

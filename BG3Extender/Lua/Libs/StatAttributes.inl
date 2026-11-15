@@ -124,6 +124,17 @@ bool ObjectHelpers::SetRawAttribute(Object* object, FixedString key, StringView 
         return false;
     }
 
+#if !defined(_MSC_VER)
+    // The macOS game has this function only inlined into its callers. What
+    // does its work there (Mac/Binding/StatsFunctions.h) is withheld when the
+    // game's code is not the code it was written from: then there is nothing
+    // to call, and nothing of the object is changed.
+    if (GetStaticSymbols().stats__Object__SetPropertyString == nullptr) {
+        OsiError("Cannot set attribute '" << key << "' of stats object '" << object->Name << "': stats::Object::SetPropertyString is not available in this game");
+        return false;
+    }
+#endif
+
     if (info->Type == RPGEnumerationType::StatsFunctors) {
         ClearStatsFunctors(object, key, value);
     }

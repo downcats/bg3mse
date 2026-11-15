@@ -236,14 +236,24 @@ bool CustomPropertyManager::PropertyCheck(GenericPropertyMap const& pm, FixedStr
 
     auto prop = pm.Properties.find(name);
     if (prop) {
+#if defined(_MSC_VER)
         LuaError("Type " << pm.Name << " already has a property named '" << name << "'");
+#else
+        // FixedStringUnhashed converts to char const* and to FixedString, and
+        // both have an inserter: ambiguous outside MSVC.
+        LuaError("Type " << pm.Name << " already has a property named '" << name.GetString() << "'");
+#endif
         return false;
     }
 
     auto& customProps = PropertyMaps[(int32_t)pm.RegistryIndex];
     auto customProp = customProps->Properties.try_get(name);
     if (customProp) {
+#if defined(_MSC_VER)
         LuaError("Type " << pm.Name << " already has a custom property named '" << name << "'");
+#else
+        LuaError("Type " << pm.Name << " already has a custom property named '" << name.GetString() << "'");
+#endif
         return false;
     }
 

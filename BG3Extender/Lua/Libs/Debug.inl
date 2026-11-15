@@ -1,5 +1,8 @@
 #include <Extender/ScriptExtender.h>
 #include <Lua/Debugger/LuaDebugger.h>
+#if !defined(_MSC_VER)
+#include <Extender/Shared/ScriptHelpers.h>
+#endif
 
 /// <lua_module>Debug</lua_module>
 BEGIN_NS(lua::debug)
@@ -197,6 +200,7 @@ void GenerateIdeHelpers(lua_State* L, std::optional<bool> builtinOnly)
 
         auto helpers = DoGenerateIdeHelpers(builtinOnly && *builtinOnly);
 
+#if defined(_MSC_VER)
         auto path = GetStaticSymbols().ToPath("", PathRootType::Data);
         path += "Mods/";
         path += GetStaticSymbols().GetModManagerServer()->BaseModule.Info.Directory;
@@ -209,6 +213,17 @@ void GenerateIdeHelpers(lua_State* L, std::optional<bool> builtinOnly)
         }
 
         f.write(helpers.c_str(), helpers.size());
+#else
+        // The game's Data folder is inside its application bundle on macOS,
+        // which is not to be written: the file goes to the same path in the
+        // Script Extender folder, where Ext.Types.GenerateIdeHelpers writes.
+        STDString path = "Mods/";
+        path += GetStaticSymbols().GetModManagerServer()->BaseModule.Info.Directory;
+        path += "/Story/RawFiles/Lua/OsiIdeHelpers.lua";
+        if (script::SaveExternalFile(path, PathRootType::UserProfile, helpers)) {
+            INFO("IDE helpers written to '%s'", ToUTF8(*script::GetPathForExternalIo(path, PathRootType::UserProfile)).c_str());
+        }
+#endif
 #if defined(OSI_EOCAPP)
     } else {
         OsiError("GenerateIdeHelpers() only supported in developer mode");
@@ -232,7 +247,12 @@ void LuaDebugBreak(lua_State* L)
 // Development-only function for testing crash reporting
 void Crash(int type)
 {
-#if defined(_DEBUG)
+#if defined(_DEBUG) || !defined(_MSC_VER)
+#if !defined(_DEBUG) && !defined(_MSC_VER)
+    // A release build outside MSVC only when asked for twice: developer mode
+    // and debug_crash in bg3mse.conf (Mac/Shim/windows.h, DebugCrashAllowed).
+    if (!::bg3se::mac::DebugCrashAllowed()) return;
+#endif
     switch (type) {
     case 0:
     {

@@ -93,12 +93,22 @@ namespace Impl
 
     String ToString(float value)
     {
+#if defined(_MSC_VER)
         return std::to_string(value).c_str();
+#else
+        // In the C locale, as his static C library has it.
+        return bg3se::mac::FloatText(value).c_str();
+#endif
     }
 
     String ToString(double value)
     {
+#if defined(_MSC_VER)
         return std::to_string(value).c_str();
+#else
+        // In the C locale, as his static C library has it.
+        return bg3se::mac::FloatText(value).c_str();
+#endif
     }
 
     String ToString(String const& value)
@@ -166,12 +176,12 @@ void* Cast(const TypeClass* type, BaseObject* obj)
     return nullptr;
 }
 
-void* BaseObject::operator new(unsigned __int64 sz)
+void* BaseObject::operator new(size_t sz)
 {
     return GameAllocRaw(sz);
 }
 
-void* BaseObject::operator new(unsigned __int64 sz, void* ptr)
+void* BaseObject::operator new(size_t sz, void* ptr)
 {
     return ptr;
 }
@@ -290,8 +300,17 @@ struct TypeClassAncestors
 
     bool Collapsed{ false };
     Vector<TypeClass::AncestorInfo> Ancestors;
+#if defined(_MSC_VER)
     SRWLOCK Lock;
 };
+#else
+    bg3se::mac::GameNoesisSpinLock Lock;
+};
+static_assert(sizeof(TypeClassAncestors) == bg3se::mac::kNoesisAncestorsSize
+    && offsetof(TypeClassAncestors, Lock) == bg3se::mac::kNoesisAncestorsLock
+    && offsetof(TypeClassAncestors, Collapsed) == bg3se::mac::kNoesisAncestorsCollapsed
+    && offsetof(TypeClassAncestors, Ancestors) == bg3se::mac::kNoesisAncestorsVector);
+#endif
 
 const TypeClass* TypeClass::StaticGetClassType(TypeTag<TypeClass>*)
 {

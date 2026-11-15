@@ -36,7 +36,11 @@ std::optional<STDString> LuaBundle::GetResource(STDString const& path) const
 {
     if (!resourcePath_.empty()) {
         auto resPath = resourcePath_ + L"/" + FromUTF8(path).c_str();
+#if defined(_MSC_VER)
         std::ifstream f(resPath.c_str(), std::ios::in | std::ios::binary);
+#else
+        std::ifstream f(std::filesystem::path(resPath.c_str()), std::ios::in | std::ios::binary);
+#endif
         if (f.good()) {
             STDString body;
             f.seekg(0, std::ios::end);

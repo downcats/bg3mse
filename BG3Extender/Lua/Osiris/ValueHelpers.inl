@@ -24,6 +24,11 @@ void OsiStringIncRef(OsiStringHandle str)
 void OsiStringDecRef(OsiStringHandle str)
 {
     auto& globals = GetOsiGlobals();
+#if !defined(_MSC_VER)
+    // macOS: once a session, that a story string the extender holds is released.
+    static std::once_flag logged;
+    std::call_once(logged, [] { DEBUG("Releasing a string from the Osiris string table"); });
+#endif
     globals.RemoveString(*globals.StringTable, str);
 }
 
@@ -285,6 +290,11 @@ char * LuaToString(lua_State* L, int i, int type, char* reuseString)
         if (reuseString != nullptr) {
             size_t len;
             auto s = lua_tolstring(L, i, &len);
+#if !defined(_MSC_VER)
+            // macOS: once a session, that a string argument takes the reused buffer.
+            static std::once_flag logged;
+            std::call_once(logged, [] { DEBUG("Copying a Lua string into a reused Osiris argument"); });
+#endif
             strncpy_s(reuseString, 0x100, s, len);
             return reuseString;
         } else {

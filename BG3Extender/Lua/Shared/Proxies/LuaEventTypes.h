@@ -14,11 +14,11 @@ BEGIN_SE()
 
 #define DECLARE_EVENT(id, engineName, luaName, cls, ...) \
 	struct engineName##Event { using ParamsType = cls; }; \
-	template <> constexpr EventTypeId EventID<engineName##Event> = EventTypeId(id); \
+	template <> inline constexpr EventTypeId EventID<engineName##Event> = EventTypeId(id); \
 
 #define DECLARE_EVENT_NS(id, engineName, luaName, ns, cls, ...) \
 	struct engineName##Event { using ParamsType = ns::cls; }; \
-	template <> constexpr EventTypeId EventID<engineName##Event> = EventTypeId(id); \
+	template <> inline constexpr EventTypeId EventID<engineName##Event> = EventTypeId(id); \
 
 #include <GameDefinitions/AllEvents.inl>
 

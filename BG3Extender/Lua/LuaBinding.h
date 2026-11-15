@@ -103,7 +103,12 @@ namespace bg3se::lua
     class VMCallEntry
     {
     public:
+#if defined(_MSC_VER)
         inline VMCallEntry(State* state, int stackDelta = 0);
+#else
+        // Defined in LuaBinding.cpp and used in other sources: not inline.
+        VMCallEntry(State* state, int stackDelta = 0);
+#endif
         ~VMCallEntry();
 
     private:

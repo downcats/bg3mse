@@ -124,8 +124,13 @@ HitResult* FunctorEventHooks::OnDealDamage(bg3se::stats::DealDamageFunctor__Appl
     return ret;
 }
 
+#if defined(_MSC_VER)
 void FunctorEventHooks::OnEntityDamageEvent(bg3se::esv::StatsSystem__ThrowDamageEventProc* next, esv::StatsSystem* statsSystem,
     void* temp5, HitDesc* hit, AttackDesc* attack, bool a5, bool a6)
+#else
+void FunctorEventHooks::OnEntityDamageEvent(bg3se::esv::StatsSystem__ThrowDamageEventProc* next, esv::StatsSystem* statsSystem,
+    void* temp5, HitDesc* hit, AttackDesc* attack, uint8_t a5, bool a6)
+#endif
 {
     {
         BeforeDealDamageEventParams evt{

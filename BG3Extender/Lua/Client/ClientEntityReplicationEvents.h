@@ -44,9 +44,15 @@ struct DummyFieldTracker : public ecs::FieldTracker
     };
 
     ~DummyFieldTracker() override;
+#if defined(_MSC_VER)
     void Add(EntityHandle entity, void* component) override;
     void FireEvents() override;
     void Remove(EntityHandle entity) override;
+#else
+    void Add(EntityHandle const& entity, void* component) override;
+    void Remove(EntityHandle const& entity) override;
+    void FireEvents() override;
+#endif
 
     SharedChangeSet* SharedChanges{ nullptr };
     ecs::FieldTracker* Base{ nullptr };

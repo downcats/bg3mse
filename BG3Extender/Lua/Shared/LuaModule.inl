@@ -1,4 +1,7 @@
 #include <Lua/Shared/LuaModule.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/LuaGates.h>
+#endif
 
 BEGIN_NS(lua)
 
@@ -62,7 +65,14 @@ void ModuleRegistry::MakeLuaFunctionTable(ModuleDefinition const& module, std::v
 {
     lib.reserve(module.Functions.size() + 1);
     for (auto const& fun : module.Functions) {
+#if defined(_MSC_VER)
         lib.push_back({ fun.Name.GetString(), fun.Func });
+#else
+        // A function that reads through what the binding may leave null on
+        // this game is put behind a gate (Mac/Binding/LuaGates.h).
+        lib.push_back({ fun.Name.GetString(), mac::binding::GateLuaFunction(module.Table.GetString(),
+            module.SubTable ? module.SubTable.GetString() : nullptr, fun.Name.GetString(), (int)module.Role, fun.Func) });
+#endif
     }
     lib.push_back({ nullptr, nullptr });
 }

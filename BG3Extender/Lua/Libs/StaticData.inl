@@ -329,21 +329,41 @@ Resource* GetPackageResource(FixedString const& packageName, FixedString const& 
 
 TextureAtlasMap* GetTextureAtlasManager()
 {
+#if !defined(_MSC_VER)
+    // The macOS binding leaves the map's pointer null on a game it does not
+    // find the map in, and the game makes the map after it has started.
+    if (!GetStaticSymbols().ls__gTextureAtlasMap || !*GetStaticSymbols().ls__gTextureAtlasMap) return nullptr;
+#endif
     return *GetStaticSymbols().ls__gTextureAtlasMap;
 }
 
 TextureAtlas* GetTextureAtlas(STDString path)
 {
+#if !defined(_MSC_VER)
+    // The macOS binding leaves the map's pointer null on a game it does not
+    // find the map in, and the game makes the map after it has started.
+    if (!GetStaticSymbols().ls__gTextureAtlasMap || !*GetStaticSymbols().ls__gTextureAtlasMap) return nullptr;
+#endif
     return (*GetStaticSymbols().ls__gTextureAtlasMap)->AtlasMap.get_or_default(path);
 }
 
 TextureAtlas* GetIconAtlas(FixedString icon)
 {
+#if !defined(_MSC_VER)
+    // The macOS binding leaves the map's pointer null on a game it does not
+    // find the map in, and the game makes the map after it has started.
+    if (!GetStaticSymbols().ls__gTextureAtlasMap || !*GetStaticSymbols().ls__gTextureAtlasMap) return nullptr;
+#endif
     return (*GetStaticSymbols().ls__gTextureAtlasMap)->IconMap.get_or_default(icon);
 }
 
 UVValues* GetIconUVs(FixedString icon)
 {
+#if !defined(_MSC_VER)
+    // The macOS binding leaves the map's pointer null on a game it does not
+    // find the map in, and the game makes the map after it has started.
+    if (!GetStaticSymbols().ls__gTextureAtlasMap || !*GetStaticSymbols().ls__gTextureAtlasMap) return nullptr;
+#endif
     auto atlas = (*GetStaticSymbols().ls__gTextureAtlasMap)->IconMap.get_or_default(icon);
     if (atlas) {
         return atlas->Icons.get_or_default(icon);

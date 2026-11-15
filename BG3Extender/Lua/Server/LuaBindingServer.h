@@ -43,8 +43,13 @@ private:
         int storyActionId, ActionOriginator* originator, resource::GuidResourceBankBase* classResourceMgr,
         HitDesc* hit, AttackDesc* attack, EntityHandle* sourceHandle2, HitWith hitWith, int conditionRollIndex,
         bool entityDamagedEventParam, __int64 a17, SpellId* spellId2);
+#if defined(_MSC_VER)
     void OnEntityDamageEvent(bg3se::esv::StatsSystem__ThrowDamageEventProc* next, esv::StatsSystem* statsSystem, void* temp5,
         HitDesc* hit, AttackDesc* attack, bool a5, bool a6);
+#else
+    void OnEntityDamageEvent(bg3se::esv::StatsSystem__ThrowDamageEventProc* next, esv::StatsSystem* statsSystem, void* temp5,
+        HitDesc* hit, AttackDesc* attack, uint8_t a5, bool a6);
+#endif
 
     template <class TParams>
     void OnFunctorExecute(bg3se::stats::ExecuteFunctorProc<TParams>* next, HitResult* hit, bg3se::stats::Functors* self, TParams* params);

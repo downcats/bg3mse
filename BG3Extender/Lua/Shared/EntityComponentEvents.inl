@@ -1,5 +1,8 @@
 #include <Lua/Shared/LuaMethodCallHelpers.h>
 #include <Extender/Shared/ExtensionState.h>
+#if !defined(_MSC_VER)
+#include <Mac/Binding/ComponentSignalHandler.h>
+#endif
 
 BEGIN_NS(lua)
 
@@ -76,8 +79,16 @@ EntityComponentEventHooks::ComponentHooks& EntityComponentEventHooks::AddCompone
         auto callbacks = world_->ComponentCallbacks.Get(type);
 
         auto& hooks = hookedComponents_[index];
+#if defined(_MSC_VER)
         hooks.ConstructRegistrant = callbacks->OnConstruct.Add(MakeFunction(&EntityComponentEventHooks::OnComponentCreated, this, type));
         hooks.DestructRegistrant = callbacks->OnDestroy.Add(MakeFunction(&EntityComponentEventHooks::OnComponentDestroyed, this, type));
+#else
+        // The handlers are given the address of the entity the game passes by value.
+        hooks.ConstructRegistrant = callbacks->OnConstruct.Add(
+            mac::binding::ComponentSignalHandler<&EntityComponentEventHooks::OnComponentCreated>(this, type));
+        hooks.DestructRegistrant = callbacks->OnDestroy.Add(
+            mac::binding::ComponentSignalHandler<&EntityComponentEventHooks::OnComponentDestroyed>(this, type));
+#endif
     }
 
     return hookedComponents_[index];

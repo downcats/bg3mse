@@ -208,6 +208,11 @@ bool OsiFunction::MatchTuple(lua_State * L, int firstIndex, TupleVec const & tup
             {
                 auto str = get<char const*>(L, firstIndex + i);
                 auto tval = v.GetString();
+#if !defined(_MSC_VER)
+                // macOS: once a session, that a story string is compared here.
+                static std::once_flag logged;
+                std::call_once(logged, [] { DEBUG("Matching a database string against a Lua string"); });
+#endif
                 if (_stricmp(tval, str) != 0) {
                     return false;
                 }
@@ -402,6 +407,12 @@ int OsiFunction::OsiQuery(lua_State * L) const
 
 int OsiFunction::OsiUserQuery(lua_State * L) const
 {
+    // A user query that no rule of the story calls has no node
+    auto node = function_->Node.Get();
+    if (node == nullptr) {
+        return luaL_error(L, "Query '%s' has no node in the story", function_->Signature->Name);
+    }
+
     auto outParams = function_->Signature->OutParamList.numOutParams();
     auto numParams = function_->Signature->Params->Params.Size;
     auto inParams = numParams - outParams;
@@ -431,7 +442,6 @@ int OsiFunction::OsiUserQuery(lua_State * L) const
     }
 
     lua_checkstack(L, outParams);
-    auto node = (*gExtender->GetServer().Osiris().GetGlobals().Nodes)->Db.Elements[function_->Node.Id - 1];
     bool valid = node->IsValid(&args, adapter_.Id);
     if (valid) {
         if (outParams > 0) {

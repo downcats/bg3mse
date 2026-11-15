@@ -4,13 +4,21 @@ BEGIN_NS(esv::lua::tmpl)
 LegacyMap<FixedString, GameObjectTemplate*>* GetAllRootTemplates()
 {
     auto bank = GetStaticSymbols().GetGlobalTemplateBank();
-    return &bank->Templates;
+    if (bank) {
+        return &bank->Templates;
+    }
+
+    return nullptr;
 }
 
 GameObjectTemplate* GetRootTemplate(FixedString const& templateId)
 {
     auto bank = GetStaticSymbols().GetGlobalTemplateBank();
-    return bank->Templates.get_or_default(templateId);
+    if (bank) {
+        return bank->Templates.get_or_default(templateId);
+    }
+
+    return nullptr;
 }
 
 HashMap<FixedString, GameObjectTemplate*>* GetAllCacheTemplates()

@@ -7,7 +7,11 @@ using namespace bg3se::lua;
 
 DummyFieldTracker::~DummyFieldTracker() {}
 
+#if defined(_MSC_VER)
 void DummyFieldTracker::Add(EntityHandle entity, void* component)
+#else
+void DummyFieldTracker::Add(EntityHandle const& entity, void* component)
+#endif
 {
     se_assert(Changes.empty());
 
@@ -40,7 +44,11 @@ void DummyFieldTracker::FireEvents()
     SharedChanges->ChangedEntities.clear();
 }
 
+#if defined(_MSC_VER)
 void DummyFieldTracker::Remove(EntityHandle entity)
+#else
+void DummyFieldTracker::Remove(EntityHandle const& entity)
+#endif
 {
     if (Base) Base->Remove(entity);
 
