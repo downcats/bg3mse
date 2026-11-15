@@ -1,0 +1,40 @@
+{
+    "Run": true,
+    "RunId": "settings-1",
+    "Only": [
+        "Settings.",
+        "Ext.Net.PostMessageToClient#module",
+        "Ext.Net.PostMessageToServer#module"
+    ],
+    "Settings": {
+        "Name": "1-logging",
+        "Values": {
+            "CreateConsole": true,
+            "DefaultToClientConsole": true,
+            "ClearOnReset": false,
+            "EnableLogging": true,
+            "LogRuntime": true,
+            "LogDirectory": "@DIR@/logs with space",
+            "DebugFlags": 0,
+            "EnableDebugger": true,
+            "DebuggerPort": 9989,
+            "EnableLuaDebugger": true,
+            "LuaDebuggerPort": 9988,
+            "LuaBuiltinResourceDirectory": "@DIR@/LuaScripts",
+            "DeveloperMode": true,
+            "Optick": false,
+            "EnableAchievements": true,
+            "DisableStoryPatching": true,
+            "LocalMessagePassing": false,
+            "SendCrashReports": true,
+            "EnablePerfMessages": true,
+            "ProfilerLoadThresholdError": 1,
+            "ProfilerLoadCallbackThresholdError": 1000000,
+            "ProfilerCallbackThresholdError": 1000000,
+            "ProfilerClientCallbackThresholdError": 1500000,
+            "script_extender": 1,
+            "log_debug": 1,
+            "console_key": "NotAKey"
+        }
+    }
+}

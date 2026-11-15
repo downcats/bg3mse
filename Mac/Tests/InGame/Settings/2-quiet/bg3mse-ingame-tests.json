@@ -1,0 +1,32 @@
+{
+    "Run": true,
+    "RunId": "settings-2",
+    "Only": [
+        "Settings."
+    ],
+    "Settings": {
+        "Name": "2-quiet",
+        "Values": {
+            "CreateConsole": false,
+            "DeveloperMode": false,
+            "SendCrashReports": false,
+            "EnablePerfMessages": false,
+            "DisableLauncher": true,
+            "script_extender": 1,
+            "log_debug": 1,
+            "gfx_lua_jump_fix": 1,
+            "gfx_thread_idling": 1,
+            "gfx_reduced_locking": 1,
+            "gfx_ao_blur_fix": 1,
+            "gfx_ui_ring_fix": 1,
+            "gfx_ui_ring_observe": 1,
+            "gfx_duplicate_shadow_fix": 1,
+            "gfx_improved_shadows": 1,
+            "gfx_stall_log": 1,
+            "gfx_bind_dedup": 1,
+            "gfx_cluster_guard": 1,
+            "gfx_temporal": 1,
+            "gfx_temporal_sharpen": 0.5
+        }
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "Run": true,
+    "RunId": "crash-1",
+    "Only": [
+        "Ext.Debug.Crash#"
+    ],
+    "Extras": [
+        "Crash"
+    ],
+    "Settings": {
+        "Name": "6-crash",
+        "Values": {
+            "DeveloperMode": true,
+            "SendCrashReports": true,
+            "script_extender": 1,
+            "log_debug": 1,
+            "debug_crash": 1,
+            "crash_dialog": 1
+        }
+    }
+}
