@@ -1,7 +1,7 @@
 ![Baldur's Gate 3 macOS Script Extender](.github/banner-2.png)
 
 [![Download](https://img.shields.io/badge/Download-17171a?style=for-the-badge&logo=github&logoColor=eef0f2)](https://github.com/downcats/bg3mse/releases/latest)
-[![Nexus Mods](https://img.shields.io/badge/Nexus%20Mods-17171a?style=for-the-badge)](https://www.nexusmods.com/baldursgate3)
+[![Nexus Mods](https://img.shields.io/badge/Nexus%20Mods-17171a?style=for-the-badge)](https://www.nexusmods.com/baldursgate3/mods/26669)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-17171a?style=for-the-badge&logo=kofi&logoColor=ff6433)](https://ko-fi.com/downcats)
 
 A macOS port of [Norbyte's Script Extender](https://github.com/Norbyte/bg3se), so the Baldur's Gate 3 mods that need it run on Apple Silicon Macs.
