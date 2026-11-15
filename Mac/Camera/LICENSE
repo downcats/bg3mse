@@ -1,0 +1,24 @@
+Mac/Camera is bg3mse's camera module. It is derived from ersh1's BG3 Native
+Camera Tweaks, https://github.com/ersh1/BG3_NativeCameraTweaks.
+
+Licence: GPL-3.0-or-later, with the Modding Exception and the GPL-3.0 Linking
+Exception (with Corresponding Source) in EXCEPTIONS.
+
+The files in this directory are free software: you can redistribute them
+and/or modify them under the terms of the GNU General Public License as
+published by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version, with the additional permissions in the
+file EXCEPTIONS: the Modding Exception and the GPL-3.0 Linking Exception (with
+Corresponding Source). The full text of the licence is in the file COPYING.
+
+For the Modding Exception, the Modded Code is Baldur's Gate 3.
+
+The module is built as a separate library, libbg3mse-camera.dylib, together
+with bg3mse's platform layer and version stamp (Mac/Platform and
+Mac/Release/Version.h, MIT, see Mac/Platform/LICENSE). It contains
+none of Norbyte's Script Extender, and the Script Extender build does not link
+it: libbg3mse.dylib loads it at run time when it is installed.
+
+These files are distributed in the hope that they will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
